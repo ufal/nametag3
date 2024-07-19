@@ -92,14 +92,14 @@ The software has been developed and tested on Linux and is run on a commandline.
 1. Clone the repository:
 
 ```sh
-git clone https://github.com/ufal/nametag3
+$ git clone https://github.com/ufal/nametag3
 ```
 
 2. Create a Python virtual environment with torch called `venv` in the root of this directory:
 
 ```sh
-python3 -m venv venv
-venv/bin/pip3 install -r requirements.txt
+$ python3 -m venv venv
+$ venv/bin/pip3 install -r requirements.txt
 ```
 
 3. Download the NameTag 3 Models:
@@ -109,7 +109,7 @@ Download the [latest version of NameTag 3 models](https://ufal.mff.cuni.cz/namet
 4. The `nametag3.py` script is then called using the Python installed in your virtual environment:
 
 ```sh
-$ venv/bin/python3 ./nametag3.py
+$ venv/bin/python3 ./nametag3.py [--argument=value]
 ```
 
 
@@ -139,7 +139,7 @@ Example usage of multilingual traning for flat NER with a softmax classification
 head:
 
 ```sh
-venv/bin/python3 nametag3.py \
+$ venv/bin/python3 nametag3.py \
   --batch_size=8 \
   --context_type="split_document" \
   --corpus="english-conll,german-conll,spanish-conll,dutch-conll,czech-cnec2.0_conll,ukrainian-languk_conll" \

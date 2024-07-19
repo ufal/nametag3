@@ -40,7 +40,7 @@ See README.md for installation instructions.
 
 Usage:
 
-venv/bin/python3 nametag3.py
+$ venv/bin/python3 nametag3.py [--argument=value]
 
 Example Usage:
 
