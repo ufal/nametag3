@@ -190,7 +190,9 @@ $ venv/bin/python3 nametag3_server.py 8001 multilingual-conll \
 
 Example server usage with three monolingual models:
 
+```sh
 $ venv/bin/python3 nametag3\_server.py 8001 cs \
     czech-cnec2.0-240618:cs:ces    nametag3-models-210916/czech-cnec2.0-240618   czech-cnec2_acknowledgements \
     english-conll-240618:en:eng    nametag3-models-210916/english-conll-240618   english-conll_acknowledgements \
     spanish-conll-240618:es:spa    nametag3-models-210916/spanish-conll-240618   spanish-conll_acknowledgements
+```
