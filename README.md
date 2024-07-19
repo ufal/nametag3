@@ -18,7 +18,10 @@ NameTag development repository is hosted at [GitHub](https://github.com/ufal/nam
 
 Also try our [demo and online web service](https://lindat.mff.cuni.cz/services/nametag/).
 
-Contact: `strakova@ufal.mff.cuni.cz`
+Authors and Contact:
+
+- [Jana Straková](https://ufal.mff.cuni.cz/jana-strakova), `strakova@ufal.mff.cuni.cz`
+- [Milan Straka](https://ufal.mff.cuni.cz/milan-straka), `straka@ufal.mff.cuni.cz`
 
 
 ## License
