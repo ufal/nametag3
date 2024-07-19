@@ -72,9 +72,10 @@ seq2seq decoding head is the head proposed by [Straková et al. (2019)](https://
 
 ## Versions
 
-- [NameTag 3](https://ufal.mff.cuni.cz/nametag/3): current version, fine-tuned contextualized pre-trained language
-  model with either a classification head (flat NER) or a seq2seq decoding head
-  (nested NER),
+- [NameTag 3](https://ufal.mff.cuni.cz/nametag/3): current version **under
+  development**, fine-tuned contextualized pre-trained language model with
+  either a classification head (flat NER) or a seq2seq decoding head (nested
+  NER),
 - [NameTag 2](https://github.com/ufal/nametag/2): frozen contextualized
   multilingual BERT with a seq2seq decoding head for both flat and nested NER.
 - [NameTag 1](https://ufal.mff.cuni.cz/nametag/1): feed-forward neural network
