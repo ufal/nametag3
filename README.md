@@ -1,9 +1,9 @@
 # NameTag 3
 
-NameTag 3 is an open-source tool for named entity recognition (NER). NameTag
-identifies proper names in text and classifies them into predefined categories,
-such as names of persons, locations, organizations, etc. NameTag3 can be trained
-to recognize both flat and nested named entities.
+NameTag 3 is an open-source tool for named entity recognition (NER), **curently
+under development**. NameTag identifies proper names in text and classifies them
+into predefined categories, such as names of persons, locations, organizations,
+etc. NameTag3 can be trained to recognize both flat and nested named entities.
 
 NameTag 3 offers state-of-the-art or near state-of-the-art performance in
 English, German, Spanish, Dutch, Czech and Ukrainian.
