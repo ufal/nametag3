@@ -118,9 +118,9 @@ $ venv/bin/python3 ./nametag3.py
 The main NameTag 3 script is called `nametag3.py`. Example NER prediction usage:
 
 ```sh
-venv/bin/python3 nametag3.py \
+$ venv/bin/python3 nametag3.py \
   --load_checkpoint=models/nametag3-multilingual-conll-240618/ \
-  --test_data=examples/en_input.conll \
+  --test_data=examples/en_input.conll
 ```
 
 
