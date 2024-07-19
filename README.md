@@ -184,15 +184,15 @@ Example server usage:
 
 ```sh
 $ venv/bin/python3 nametag3_server.py 8001 multilingual-conll \
-  nametag3-multilingual-conll-240618/:multilingual-conll models/nametag3-multilingual-conll-240618/ multilingual_ack_link \
+  nametag3-multilingual-conll-240618:multilingual-conll models/nametag3-multilingual-conll-240618/ multilingual_ack_link \
   nametag3-english-conll-240618:eng:en models/nametag3-multilingual-conll-240618/ english_ack_link \
 ```
 
 Example server usage with three monolingual models:
 
 ```sh
-$ venv/bin/python3 nametag3\_server.py 8001 cs \
-    czech-cnec2.0-240618:cs:ces    nametag3-models-210916/czech-cnec2.0-240618   czech-cnec2_acknowledgements \
-    english-conll-240618:en:eng    nametag3-models-210916/english-conll-240618   english-conll_acknowledgements \
-    spanish-conll-240618:es:spa    nametag3-models-210916/spanish-conll-240618   spanish-conll_acknowledgements
+$ venv/bin/python3 nametag3_server.py 8001 cs \
+    czech-cnec2.0-240618:cs:ces models/nametag3-czech-cnec2.0-240618   czech-cnec2_acknowledgements \
+    english-conll-240618:en:eng models/nametag3-english-conll-240618   english-conll_acknowledgements \
+    spanish-conll-240618:es:spa models/nametag3-spanish-conll-240618   spanish-conll_acknowledgements
 ```
