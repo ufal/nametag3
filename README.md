@@ -8,15 +8,15 @@ to recognize both flat and nested named entities.
 NameTag 3 offers state-of-the-art or near state-of-the-art performance in
 English, German, Spanish, Dutch, Czech and Ukrainian.
 
-NameTag 3 can be used either as a commandline tool or by requesting the [NameTag webservice](http://lindat.mff.cuni.cz/services/nametag).
+NameTag 3 can be used either as a commandline tool or by requesting the [NameTag webservice](https://lindat.mff.cuni.cz/services/nametag/).
 
-The [NameTag website](http://ufal.mff.cuni.cz/nametag) contains download links
+The [NameTag website](https://ufal.mff.cuni.cz/nametag) contains download links
 of both the released packages and trained models, hosts documentation and
 refers to demo and online web service.
 
-NameTag development repository is hosted at [GitHub](http://github.com/ufal/nametag).
+NameTag development repository is hosted at [GitHub](https://github.com/ufal/nametag3).
 
-Also try our [demo and online web service](http://lindat.mff.cuni.cz/services/nametag/).
+Also try our [demo and online web service](https://lindat.mff.cuni.cz/services/nametag/).
 
 Contact: `strakova@ufal.mff.cuni.cz`
 
@@ -26,12 +26,12 @@ Contact: `strakova@ufal.mff.cuni.cz`
 Copyright 2024 Institute of Formal and Applied Linguistics, Faculty of
 Mathematics and Physics, Charles University, Czech Republic.
 
-NameTag 3 is a free software under [Mozilla Public License 2.0](http://www.mozilla.org/MPL/2.0/)
+NameTag 3 is a free software under [Mozilla Public License 2.0](https://www.mozilla.org/MPL/2.0/)
 license and the linguistic models are free for non-commercial use and
-distributed under [CC BY-NC-SA](http://creativecommons.org/licenses/by-nc-sa/3.0/)
+distributed under [CC BY-NC-SA](https://creativecommons.org/licenses/by-nc-sa/3.0/)
 license, although for some models the original data used to create the model
 may impose additional licensing conditions. NameTag is versioned using
-[Semantic Versioning](http://semver.org/).
+[Semantic Versioning](https://semver.org/).
 
 
 ## Please Cite as (How to Cite)
