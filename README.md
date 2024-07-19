@@ -180,8 +180,6 @@ a `nametag3-multilingual-conll-240618` model and also as
 a `nametag3-english-conll-240618` model. The first model is also known as
 `multilingual-conll`, and the second one which is also named `eng` and `en`:
 
-Example server usage:
-
 ```sh
 $ venv/bin/python3 nametag3_server.py 8001 multilingual-conll \
   nametag3-multilingual-conll-240618:multilingual-conll models/nametag3-multilingual-conll-240618/ multilingual_ack_link \
