@@ -557,7 +557,8 @@ class NameTag3Model(keras.Model):
         # Make sure we do not restore the number of iterations from the checkpoint.
         # For this to work, the optimizer must be already created; if it is not,
         # the next line will raise an exception.
-        self.optimizer.iterations.assign(0)
+        if hasattr(self, "optimizer"):
+            self.optimizer.iterations.assign(0)
 
     def fit(self, epochs, train_dataloader, dev_dataloader=None, dev_datasets=None, dev_dataloaders=None, save_best_checkpoint=False, initial_epoch=0):
         """"Trains (frozen or fine-tuning) the model."""
