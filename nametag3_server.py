@@ -163,8 +163,6 @@ class Models:
                 # TODO: do something
                 pass
 
-            self.model.compile()
-
             # Load the checkpoint
             self.model.load_checkpoint(os.path.join(path, self._args.checkpoint_filename))
 
