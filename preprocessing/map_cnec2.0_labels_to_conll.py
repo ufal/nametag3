@@ -12,7 +12,7 @@
 
 In particular, the following happens with the CNEC 2.0 corpus:
 
-1. The 62 CNEC 2.0 fine-grained labels and the 4 CNEC 2.0 containers are mapped
+1. The 46 CNEC 2.0 fine-grained labels and the 4 CNEC 2.0 containers are mapped
 to the 4 CoNLL-2003 PER, ORG, LOC, MISC labels. The mapping was decided by
 manually inspecting and comparing the CoNLL-2003 English train data examples
 with the CoNLL 2.0 train data examples.
