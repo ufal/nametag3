@@ -23,21 +23,21 @@ The mandatory arguments are given in this order:
 
 A single instance of a trained model physically stored on a disc can be listed
 under several variants, just like in the following example, in which one model
-(models/nametag3-multilingual-conll-240618/) is served as
-a nametag3-multilingual-conll-240618 model and also as
-a nametag3-english-conll-240618 model. The first model is also known as
+(models/nametag3-multilingual-conll-240830/) is served as
+a nametag3-multilingual-conll-240830 model and also as
+a nametag3-english-conll-240830 model. The first model is also known as
 multilingual-conll, and the second one is also named eng and en:
 
-$ venv/bin/python3 nametag3_server.py 8001 models/nametag3-multilingual-conll-240618/ \
-  nametag3-multilingual-conll-240618/ models/nametag3-multilingual-conll-240618/ multilingual_acknowledgements \
-  nametag3-english-conll-240618:eng:en models/nametag3-multilingual-conll-240618/ english_acknowledgements \
+$ venv/bin/python3 nametag3_server.py 8001 models/nametag3-multilingual-conll-240830/ \
+  nametag3-multilingual-conll-240830/ models/nametag3-multilingual-conll-240830/ multilingual_acknowledgements \
+  nametag3-english-conll-240830:eng:en models/nametag3-multilingual-conll-240830/ english_acknowledgements \
 
 Example server usage with three monolingual models:
 
 $ venv/bin/python3 nametag3_server.py 8001 cs \
-    czech-cnec2.0-240618:cs:ces models/nametag3-czech-cnec2.0-240618/ czech-cnec2_acknowledgements \
-    english-conll-240618:en:eng models/nametag3-english-conll-240618/ english-conll_acknowledgements \
-    spanish-conll-240618:es:spa models/nametag3-spanish-conll-240618/ spanish-conll_acknowledgements
+    czech-cnec2.0-240830:cs:ces models/nametag3-czech-cnec2.0-240830/ czech-cnec2_acknowledgements \
+    english-conll-240830:en:eng models/nametag3-english-conll-240830/ english-conll_acknowledgements \
+    spanish-conll-240830:es:spa models/nametag3-spanish-conll-240830/ spanish-conll_acknowledgements
 
 Sending requests to the NameTag 3 server
 ----------------------------------------
@@ -606,7 +606,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                                     request.respond("application/json", additional_headers={"X-Billing-Input-NFC-Len": str(infclen)})
                                     request.wfile.write(json.dumps(collections.OrderedDict([
                                         ("model", model.name),
-                                        ("acknowledgements", ["http://ufal.mff.cuni.cz/nametag/2#acknowledgements", model.acknowledgements]),
+                                        ("acknowledgements", ["http://ufal.mff.cuni.cz/nametag/3#acknowledgements", model.acknowledgements]),
                                         ("result", ""),
                                     ]), indent=1)[:-3].encode("utf-8"))
                                     if output_param == "conllu-ne":

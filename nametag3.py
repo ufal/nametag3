@@ -45,7 +45,7 @@ $ venv/bin/python3 nametag3.py [--argument=value]
 Example Usage:
 
 $ venv/bin/python3 nametag3.py \
-  --load_checkpoint=models/nametag3-multilingual-conll-240618/ \
+  --load_checkpoint=models/nametag3-multilingual-conll-240830/ \
   --test_data=examples/en_input.conll
 
 Input:
@@ -117,6 +117,7 @@ if __name__ == "__main__":
     parser.add_argument("--hf_plm", default=None, type=str, help="HF pre-trained model name.")
     parser.add_argument("--load_checkpoint", default=None, type=str, help="Load previously saved checkpoint.")
     parser.add_argument("--prevent_all_dropouts", default=False, action="store_true", help="If True, sets --dropout=0., --transformer_hidden_dropout_probs=0. and --transformer_attention_probs_dropout_prob=0.")
+    parser.add_argument("--remove_optimizer_from_checkpoint", default=False, action="store_true", help="If True, removes the optimizer from the loaded checkpoint and saves the checkpoint.")
     parser.add_argument("--sampling", default="concatenate", type=str, help="Sampling strategy for multilingual datasets [proportional|uniform|concatenate|temperature].")
     parser.add_argument("--save_best_checkpoint", default=False, action="store_true", help="Save best checkpoint on dev if set.")
     parser.add_argument("--seed", default=42, type=int, help="Random seed.")
@@ -252,6 +253,12 @@ if __name__ == "__main__":
     # Load checkpoint
     if args.load_checkpoint:
         model.load_checkpoint(os.path.join(args.load_checkpoint, args.checkpoint_filename))
+        if args.remove_optimizer_from_checkpoint:
+            new_checkpoint_filename = "{}/{}_wo_optimizer.weights.h5".format(args.load_checkpoint, args.checkpoint_filename[:-len(".weights.h5")])
+            print("Saving checkpoint without optimizer to {}".format(new_checkpoint_filename), file=sys.stderr, flush=True)
+            model.optimizer = None
+            model.save_weights(new_checkpoint_filename)
+            sys.exit()
 
     # Finetune the transformer
     if args.train_data and args.epochs:
