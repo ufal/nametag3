@@ -1,27 +1,32 @@
 # NameTag 3
 
-NameTag 3 is an open-source tool for named entity recognition (NER), **curently
-under development**. NameTag identifies proper names in text and classifies them
-into predefined categories, such as names of persons, locations, organizations,
-etc. NameTag3 can be trained to recognize both flat and nested named entities.
+NameTag 3 is an open-source tool for both flat and nested named entity
+recognition (NER). NameTag 3 identifies proper names in text and classifies them
+into a set of predefined categories, such as names of persons, locations,
+organizations, etc.
 
 NameTag 3 offers state-of-the-art or near state-of-the-art performance in
 English, German, Spanish, Dutch, Czech and Ukrainian.
 
-NameTag 3 can be used either as a commandline tool or by requesting the [NameTag webservice](https://lindat.mff.cuni.cz/services/nametag/).
+NameTag 3 is a free software under [Mozilla Public License 2.0](htts://www.mozilla.org/MPL/2.0/), and the linguistic models are free for non-commercial use and distributed under [CC BY-NC-SA license](https://creativecommons.org/licenses/by-nc-sa/3.0/), although for some models the original data used to create the
+model may impose additional licensing conditions. NameTag is versioned using [Semantic Versioning https://semver.org./].
 
-The [NameTag website](https://ufal.mff.cuni.cz/nametag) contains download links
+Copyright 2024 Institute of Formal and Applied Linguistics, Faculty of Mathematics and Physics, Charles University, Czech Republic.
+
+
+## Current Release
+
+NameTag 3 can be used either as a commandline tool or by requesting the NameTag webservice:
+
+- [LINDAT/CLARIN](https://lindat.cz) hosts the [NameTag Web Application](https://lindat.mff.cuni.cz/services/nametag/),
+- [LINDAT/CLARIN](https://lindat.cz) also hosts the [NameTag REST Web Service](https://lindat.mff.cuni.cz/services/nametag/).
+
+NameTag 3 source code can be found at
+[GitHub](https://github.com/ufal/nametag3).
+
+The [NameTag website](https://ufal.mff.cuni.cz/nametag/3/) contains download links
 of both the released packages and trained models, hosts documentation and
 refers to demo and online web service.
-
-NameTag development repository is hosted at [GitHub](https://github.com/ufal/nametag3).
-
-Also try our [demo and online web service](https://lindat.mff.cuni.cz/services/nametag/).
-
-Authors and Contact:
-
-- [Jana Straková](https://ufal.mff.cuni.cz/jana-strakova), `strakova@ufal.mff.cuni.cz`
-- [Milan Straka](https://ufal.mff.cuni.cz/milan-straka), `straka@ufal.mff.cuni.cz`
 
 
 ## License
@@ -39,7 +44,7 @@ may impose additional licensing conditions. NameTag is versioned using
 
 ## Please Cite as (How to Cite)
 
-If you use this software, please give us credit by referencing [this publication](https://aclanthology.org/P19-1527.pdf):
+If you use this software, please give us credit by referencing [Straková et al. (2019)](https://aclanthology.org/P19-1527.pdf):
 
 ```
 @inproceedings{strakova-etal-2019-neural,
@@ -64,7 +69,7 @@ If you use this software, please give us credit by referencing [this publication
 
 ## What Is New
 
-Compared to NameTag 2, NameTag 3 is a fine-tuned large language model (LLM) with
+Compared to [NameTag 2](https://ufal.mff.cuni.cz/nametag/2/), [NameTag 3](https://ufal.mff.cuni.cz/nametag/3/) is a fine-tuned large language model (LLM) with
 either a classification head for flat NEs (e.g., the CoNLL-2003 English data) or
 with seq2seq decoding head for nested NEs (e.g., the CNEC 2.0 Czech data). The
 seq2seq decoding head is the head proposed by [Straková et al. (2019)](https://aclanthology.org/P19-1527).
@@ -72,19 +77,14 @@ seq2seq decoding head is the head proposed by [Straková et al. (2019)](https://
 
 ## Versions
 
-- [NameTag 3](https://ufal.mff.cuni.cz/nametag/3): current version **under
-  development**, fine-tuned contextualized pre-trained language model with
-  either a classification head (flat NER) or a seq2seq decoding head (nested
-  NER),
-- [NameTag 2](https://github.com/ufal/nametag/2): frozen contextualized
-  multilingual BERT with a seq2seq decoding head for both flat and nested NER.
-- [NameTag 1](https://ufal.mff.cuni.cz/nametag/1): feed-forward neural network
-  for flat NER.
+- [NameTag 3](https://ufal.mff.cuni.cz/nametag/3)
+- [NameTag 2](https://github.com/ufal/nametag/2)
+- [NameTag 1](https://ufal.mff.cuni.cz/nametag/1)
 
 
 ## Requirements
 
-The software has been developed and tested on Linux and is run on a commandline.
+The software has been developed and tested on Linux and is run from the commandline.
 
 
 ## Installation
@@ -195,3 +195,9 @@ $ venv/bin/python3 nametag3_server.py 8001 cs \
     english-conll-240830:en:eng models/nametag3-english-conll-240830/ english-conll_acknowledgements \
     spanish-conll-240830:es:spa models/nametag3-spanish-conll-240830/ spanish-conll_acknowledgements
 ```
+
+
+## Authors and Contact:
+
+- [Jana Straková](https://ufal.mff.cuni.cz/jana-strakova), `strakova@ufal.mff.cuni.cz`
+- [Milan Straka](https://ufal.mff.cuni.cz/milan-straka), `straka@ufal.mff.cuni.cz`
