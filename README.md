@@ -9,7 +9,7 @@ NameTag 3 offers state-of-the-art or near state-of-the-art performance in
 English, German, Spanish, Dutch, Czech and Ukrainian.
 
 NameTag 3 is a free software under [Mozilla Public License 2.0](htts://www.mozilla.org/MPL/2.0/), and the linguistic models are free for non-commercial use and distributed under [CC BY-NC-SA license](https://creativecommons.org/licenses/by-nc-sa/3.0/), although for some models the original data used to create the
-model may impose additional licensing conditions. NameTag is versioned using [Semantic Versioning https://semver.org./].
+model may impose additional licensing conditions. NameTag is versioned using [Semantic Versioning](https://semver.org./).
 
 Copyright 2024 Institute of Formal and Applied Linguistics, Faculty of Mathematics and Physics, Charles University, Czech Republic.
 
@@ -67,19 +67,16 @@ If you use this software, please give us credit by referencing [Straková et al.
 ```
 
 
-## What Is New
-
-Compared to [NameTag 2](https://ufal.mff.cuni.cz/nametag/2/), [NameTag 3](https://ufal.mff.cuni.cz/nametag/3/) is a fine-tuned large language model (LLM) with
-either a classification head for flat NEs (e.g., the CoNLL-2003 English data) or
-with seq2seq decoding head for nested NEs (e.g., the CNEC 2.0 Czech data). The
-seq2seq decoding head is the head proposed by [Straková et al. (2019)](https://aclanthology.org/P19-1527).
-
-
 ## Versions
 
 - [NameTag 3](https://ufal.mff.cuni.cz/nametag/3)
 - [NameTag 2](https://github.com/ufal/nametag/2)
 - [NameTag 1](https://ufal.mff.cuni.cz/nametag/1)
+
+Compared to [NameTag 2](https://ufal.mff.cuni.cz/nametag/2/), [NameTag 3](https://ufal.mff.cuni.cz/nametag/3/) is a fine-tuned large language model (LLM) with
+either a classification head for flat NEs (e.g., the CoNLL-2003 English data) or
+with seq2seq decoding head for nested NEs (e.g., the CNEC 2.0 Czech data). The
+seq2seq decoding head is the head proposed by [Straková et al. (2019)](https://aclanthology.org/P19-1527).
 
 
 ## Requirements
