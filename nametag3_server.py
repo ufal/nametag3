@@ -606,7 +606,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                                     request.respond("application/json", additional_headers={"X-Billing-Input-NFC-Len": str(infclen)})
                                     request.wfile.write(json.dumps(collections.OrderedDict([
                                         ("model", model.name),
-                                        ("acknowledgements", ["http://ufal.mff.cuni.cz/nametag/3#acknowledgements", model.acknowledgements]),
+                                        ("acknowledgements", ["https://ufal.mff.cuni.cz/nametag/3#acknowledgements", model.acknowledgements]),
                                         ("result", ""),
                                     ]), indent=1)[:-3].encode("utf-8"))
                                     if output_param == "conllu-ne":
