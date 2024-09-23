@@ -453,6 +453,22 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
             request.respond("text/plain", code)
             request.wfile.write(message.encode("utf-8"))
 
+        def start_responding(request, url, output_param, model, infclen):
+            if url.path.startswith("/weblicht"):
+                request.respond("application/conllu")
+            else:
+                request.respond("application/json", additional_headers={"X-Billing-Input-NFC-Len": str(infclen)})
+                request.wfile.write(json.dumps(collections.OrderedDict([
+                    ("model", model.name),
+                    ("acknowledgements", ["https://ufal.mff.cuni.cz/nametag/3#acknowledgements", model.acknowledgements]),
+                    ("result", ""),
+                ]), indent=1)[:-3].encode("utf-8"))
+                if output_param == "conllu-ne":
+                    request.wfile.write(json.dumps(
+                        "# generator = NameTag 3, https://lindat.mff.cuni.cz/services/nametag\n"
+                        "# nametag_model = {}\n"
+                        "# nametag_model_licence = CC BY-NC-SA\n".format(model.name))[1:-1].encode("utf-8"))
+
         def do_GET(request):
             # Parse the URL
             params = {}
@@ -568,6 +584,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                         token_list[-1].append(model._udpipe_tokenizer.Token(token.form, token.getSpacesBefore(), token.getSpacesAfter()))
                     input_tokens.append("")
 
+
                 # Create NameTag3Collection with only one NameTag3Dataset.
                 test_collection = NameTag3DatasetCollection(model.args,
                                                             tokenizer=model.hf_tokenizer,
@@ -578,48 +595,43 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                 started_responding = False
                 n_tokens_in_batches, n_nes_in_batches, n_sentences_in_batches = 0, 1, 0
                 try:
-                    dataloader = test_collection.create_torch_dataloader(model.args)
-                    for batch_output in model.yield_predicted_batches(test_collection.datasets[-1], dataloader):
 
-                        # Sentences and tokens processed in this batch
-                        batch_sentences = sentences[n_sentences_in_batches:n_sentences_in_batches+len(batch_output)]
-                        batch_udpipe_tokens = token_list[n_sentences_in_batches:n_sentences_in_batches+len(batch_output)]
-                        n_sentences_in_batches += len(batch_output)
+                    # Handle empty requests separately by generating empty output with valid format and headers.
+                    if len(input_tokens) == 0:
+                        request.start_responding(url, output_param, model, infclen)
 
-                        # Finalize the batch output string by joining the sentence strings.
-                        batch_output = "".join(batch_output)
+                    # Handle non-empty requests by running the neural network.
+                    else:
+                        dataloader = test_collection.create_torch_dataloader(model.args)
 
-                        if url.path == "/recognize" or url.path == "/weblicht/recognize":
-                            batch_output = model.postprocess(batch_output)
-                            if output_param == "vertical":
-                                batch_output, n_tokens_in_batches = model.conll_to_vertical(batch_output, n_tokens_in_batches)
-                            if output_param == "conllu-ne":
-                                batch_output, n_nes_in_batches = model.conll_to_conllu(batch_output, batch_sentences, "conllu-ne", n_nes_in_batches)
-                            if output_param == "xml":
-                                batch_output = model.conll_to_xml(batch_output, batch_udpipe_tokens)
+                        for batch_output in model.yield_predicted_batches(test_collection.datasets[-1], dataloader):
 
-                            if not started_responding:
-                                # The first batch is ready, we commit to generate batch_output.
+                            # Sentences and tokens processed in this batch
+                            batch_sentences = sentences[n_sentences_in_batches:n_sentences_in_batches+len(batch_output)]
+                            batch_udpipe_tokens = token_list[n_sentences_in_batches:n_sentences_in_batches+len(batch_output)]
+                            n_sentences_in_batches += len(batch_output)
+
+                            # Finalize the batch output string by joining the sentence strings.
+                            batch_output = "".join(batch_output)
+
+                            if url.path == "/recognize" or url.path == "/weblicht/recognize":
+                                batch_output = model.postprocess(batch_output)
+                                if output_param == "vertical":
+                                    batch_output, n_tokens_in_batches = model.conll_to_vertical(batch_output, n_tokens_in_batches)
+                                if output_param == "conllu-ne":
+                                    batch_output, n_nes_in_batches = model.conll_to_conllu(batch_output, batch_sentences, "conllu-ne", n_nes_in_batches)
+                                if output_param == "xml":
+                                    batch_output = model.conll_to_xml(batch_output, batch_udpipe_tokens)
+
+                                if not started_responding:
+                                    # The first batch is ready, we commit to generate batch_output.
+                                    request.start_responding(url, output_param, model, infclen)
+                                    started_responding=True
+
                                 if url.path.startswith("/weblicht"):
-                                    request.respond("application/conllu")
+                                    request.wfile.write(batch_output.encode("utf-8"))
                                 else:
-                                    request.respond("application/json", additional_headers={"X-Billing-Input-NFC-Len": str(infclen)})
-                                    request.wfile.write(json.dumps(collections.OrderedDict([
-                                        ("model", model.name),
-                                        ("acknowledgements", ["https://ufal.mff.cuni.cz/nametag/3#acknowledgements", model.acknowledgements]),
-                                        ("result", ""),
-                                    ]), indent=1)[:-3].encode("utf-8"))
-                                    if output_param == "conllu-ne":
-                                        request.wfile.write(json.dumps(
-                                            "# generator = NameTag 3, https://lindat.mff.cuni.cz/services/nametag\n"
-                                            "# nametag_model = {}\n"
-                                            "# nametag_model_licence = CC BY-NC-SA\n".format(model.name))[1:-1].encode("utf-8"))
-                                started_responding=True
-
-                            if url.path.startswith("/weblicht"):
-                                request.wfile.write(batch_output.encode("utf-8"))
-                            else:
-                                request.wfile.write(json.dumps(batch_output, ensure_ascii=False)[1:-1].encode("utf-8"))
+                                    request.wfile.write(json.dumps(batch_output, ensure_ascii=False)[1:-1].encode("utf-8"))
 
                     if not url.path.startswith("/weblicht"):
                         request.wfile.write(b'"\n}\n')
