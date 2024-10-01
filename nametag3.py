@@ -74,6 +74,10 @@ import os
 import pickle
 import sys
 
+# Force CPU fallback for PyTorch with the MPS device due to some operators not
+# implemented in MPS.
+os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+
 os.environ.setdefault("KERAS_BACKEND", "torch")
 
 # This is only set for debugging to force all CUDA calls to be synchronous.
