@@ -23,7 +23,7 @@
 # or by simply downloading just this script specifically from the NameTag
 # 3 repository by opening
 #
-# https://github.com/ufal/nametag3/blob/main/nametag3_with_curl.py
+# https://github.com/ufal/nametag3/blob/main/nametag3_with_curl.sh
 #
 # and hitting the download button ("Download raw file").
 #
