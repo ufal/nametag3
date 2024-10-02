@@ -86,10 +86,10 @@ The software has been developed and tested on Linux and is run from the commandl
 
 ## NameTag 3 without Installation and without Python
 
-For basic use without installation and without Python, we provide a simple
-script for accessing NameTag 3 webservice from the command line using curl. The
-script will call a server. Do not send personal or private data unless you are
-authorized and comfortable with it being processed by NameTag 3.
+For basic use without installation and without Python, see a simple script
+`nametag3_with_curl.sh` for accessing NameTag 3 webservice from the command line
+using curl. The script will call a server. Do not send personal or private data
+unless you are authorized and comfortable with it being processed by NameTag 3.
 
 Usage:
 
