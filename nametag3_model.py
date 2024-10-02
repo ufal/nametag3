@@ -373,10 +373,10 @@ class NameTag3Model(keras.Model):
     """NameTag3 neural network class."""
 
     # Official eval stripts for known corpora.
-    # CNEC 2.0 eval script is modified in comparison to the original to not
+    # CNEC 2.0 eval script is corrected in comparison to the original to not
     # fail on zero division in case of very bad system predictions after the
     # first few epochs of training.
-    EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_modified.sh",
+    EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh",
                     "english-conll": "run_conlleval.sh",
                     "german-conll": "run_conlleval.sh",
                     "spanish-conll": "run_conlleval.sh",
@@ -446,7 +446,7 @@ class NameTag3Model(keras.Model):
             command = "cd {} && ../../{} {} {} {}".format(args.logdir, self.EVAL_SCRIPTS[dataset.corpus], dataset_name, dataset.filename, filename)
             os.system(command)
 
-            if self.EVAL_SCRIPTS[dataset.corpus] in ["run_cnec2.0_eval_nested.sh", "run_cnec2.0_eval_nested_modified.sh"]:
+            if self.EVAL_SCRIPTS[dataset.corpus] == "run_cnec2.0_eval_nested_corrected.sh":
                 with open("{}/{}.eval".format(args.logdir, dataset_name), "r", encoding="utf-8") as result_file:
                     for line in result_file:
                         line = line.strip("\n")
