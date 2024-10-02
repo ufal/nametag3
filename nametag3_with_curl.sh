@@ -10,10 +10,9 @@
 # A simple script for accessing NameTag 3 API using curl.
 #
 # This is a simple script for accessing NameTag 3 webservice from the command
-# line using curl, which is installed on most Linux, Windows, and macOS
-# systems. The script can run without Python installed. The script will call
-# a server. Do not send personal or private data unless you are authorized and
-# comfortable with it being processed by NameTag 3.
+# line using curl. The script can run without Python installed. The script will
+# call a server. Do not send personal or private data unless you are authorized
+# and comfortable with it being processed by NameTag 3.
 #
 # Usage:
 #
