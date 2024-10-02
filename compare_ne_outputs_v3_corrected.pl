@@ -1,5 +1,20 @@
 #!/usr/bin/env perl
 
+# Copyright 2024 Institute of Formal and Applied Linguistics, Faculty of
+# Mathematics and Physics, Charles University, Czech Republic.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# This evaluation script is a modification/correction of the official CNEC 2.0
+# evaluation script distributed with the CNEC 2.0 (Czech Named Entity Corpus)
+# here: https://ufal.mff.cuni.cz/cnec/cnec2.0.
+#
+# The modifications made here prevent failure on zero division in case of very
+# poor system predictions, which is often the case in the very first epochs of
+# training.
+
 # Reads sequence of N named entity recognizers outputs (filenames) and
 # evaluates them to the first one.
 #
