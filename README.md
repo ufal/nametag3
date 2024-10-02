@@ -93,23 +93,24 @@ authorized and comfortable with it being processed by NameTag 3.
 
 Usage:
 
-1. Get this script either by cloning the entire NameTag 3 repository:
+1. Get the `nametag3_with_curl.sh`` script either by cloning the entire NameTag
+   3 repository:
 
 ```sh
 git clone https://github.com/ufal/nametag3
 ```
 
-or by simply downloading just this script specifically from the NameTag
+or by simply downloading just the script specifically from the NameTag
 3 repository by opening
 
 ```sh
-https://github.com/ufal/nametag3/blob/main/nametag3_with_curl.py
+https://github.com/ufal/nametag3/blob/main/nametag3_with_curl.sh
 ```
 
 and hitting the download button ("Download raw file").
 
 2. Save your text in a plaintext file, see an example in
-   `examples/cs_input.txt`. At the command line, type the following command:
+   `examples/cs\_input.txt`. At the command line, type the following command:
 
 ```sh
 ./nametag3_with_curl.sh examples/cs_input.txt
