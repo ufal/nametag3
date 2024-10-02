@@ -110,7 +110,7 @@ https://github.com/ufal/nametag3/blob/main/nametag3_with_curl.sh
 and hitting the download button ("Download raw file").
 
 2. Save your text in a plaintext file, see an example in
-   `examples/cs\_input.txt`. At the command line, type the following command:
+   `examples/cs_input.txt`. At the command line, type the following command:
 
 ```sh
 ./nametag3_with_curl.sh examples/cs_input.txt
