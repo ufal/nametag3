@@ -84,6 +84,52 @@ seq2seq decoding head is the head proposed by [Straková et al. (2019)](https://
 The software has been developed and tested on Linux and is run from the commandline.
 
 
+## NameTag 3 without Installation and without Python
+
+For basic use without installation and without Python, we provide a simple
+script for accessing NameTag 3 webservice from the command line using curl. The
+script will call a server. Do not send personal or private data unless you are
+authorized and comfortable with it being processed by NameTag 3.
+
+Usage:
+
+1. Get this script either by cloning the entire NameTag 3 repository:
+
+```sh
+git clone https://github.com/ufal/nametag3
+```
+
+or by simply downloading just this script specifically from the NameTag
+3 repository by opening
+
+```sh
+https://github.com/ufal/nametag3/blob/main/nametag3_with_curl.py
+```
+
+and hitting the download button ("Download raw file").
+
+2. Save your text in a plaintext file, see an example in
+   `examples/cs_input.txt`. At the command line, type the following command:
+
+```sh
+./nametag3_with_curl.sh examples/cs_input.txt
+```
+
+3. The output will be printed to the standard output. To redirect the output
+into a file, you can type:
+
+```sh
+./nametag3_with_curl.sh examples/cs_input.txt > output_file.xml
+```
+
+4. Additionally, you can specify the language of your data. The options are
+english, german, dutch, spanish, ukraininan, and czech (lowercased):
+
+```sh
+./nametag3_with_curl.sh examples/en_input.txt english > output_file.xml
+```
+
+
 ## Installation
 
 1. Clone the repository:
