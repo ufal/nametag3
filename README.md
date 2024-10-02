@@ -124,7 +124,7 @@ into a file, you can type:
 ```
 
 4. Additionally, you can specify the language of your data. The options are
-english, german, dutch, spanish, ukraininan, and czech (lowercased):
+`english`, `german`, `dutch`, `spanish`, `ukraininan`, and `czech` (lowercased):
 
 ```sh
 ./nametag3_with_curl.sh examples/en_input.txt english > output_file.xml
