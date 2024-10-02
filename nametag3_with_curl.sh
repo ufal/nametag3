@@ -7,7 +7,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-
 # A simple script for accessing NameTag 3 API using curl.
 #
 # This is a simple script for accessing NameTag 3 webservice from the command
@@ -43,7 +42,6 @@
 # english, german, dutch, spanish, ukraininan, and czech (lowercased):
 #
 # ./nametag3_with_curl.sh examples/en_input.txt english > output_file.xml
-
 
 # Exit immediately if any command exits with a non-zero status (i.e., stops the script on errors).
 set -e
