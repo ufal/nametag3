@@ -93,7 +93,7 @@ authorized and comfortable with it being processed by NameTag 3.
 
 Usage:
 
-1. Get the `nametag3_with_curl.sh`` script either by cloning the entire NameTag
+1. Get the `nametag3_with_curl.sh` script either by cloning the entire NameTag
    3 repository:
 
 ```sh
