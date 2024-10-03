@@ -372,18 +372,6 @@ class MacroDevF1(keras.callbacks.Callback):
 class NameTag3Model(keras.Model):
     """NameTag3 neural network class."""
 
-    # Official eval stripts for known corpora.
-    # CNEC 2.0 eval script is corrected in comparison to the original to not
-    # fail on zero division in case of very bad system predictions after the
-    # first few epochs of training.
-    EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh",
-                    "english-conll": "run_conlleval.sh",
-                    "german-conll": "run_conlleval.sh",
-                    "spanish-conll": "run_conlleval.sh",
-                    "dutch-conll": "run_conlleval.sh",
-                    "czech-cnec2.0_conll": "run_conlleval.sh",
-                    "ukrainian-languk_conll": "run_conlleval.sh"}
-
     def __init__(self, output_layer_dim, args, id2label):
         """Constructs the model."""
 
@@ -434,45 +422,41 @@ class NameTag3Model(keras.Model):
                 metrics=self._create_metrics())
 
     def predict_and_evaluate(self, dataset_name, dataset, dataloader, args, epoch=None):
-        """External dev data evaluation with the official scripts."""
+        """External evaluation with the official evaluation scripts."""
 
+        # Predict the output
         filename = "{}_{}_system_predictions{}.conll".format(dataset_name, dataset.corpus, "_{}".format(epoch+1) if epoch != None else "")
         with open("{}/{}".format(args.logdir, filename), "w", encoding="utf-8") as prediction_file:
             predicted_output = self.predict(dataset_name, dataset, dataloader, args, prediction_file, evaluating=True)
 
-        f1 = None
-        if dataset.corpus in self.EVAL_SCRIPTS:
-            print("\"{}\" data of corpus \"{}\" will be evaluated with an external script \"{}\"".format(dataset_name, dataset.corpus, self.EVAL_SCRIPTS[dataset.corpus]), file=sys.stderr, flush=True)
-            command = "cd {} && ../../{} {} {} {}".format(args.logdir, self.EVAL_SCRIPTS[dataset.corpus], dataset_name, dataset.filename, filename)
-            os.system(command)
-
-            if self.EVAL_SCRIPTS[dataset.corpus] == "run_cnec2.0_eval_nested_corrected.sh":
-                with open("{}/{}.eval".format(args.logdir, dataset_name), "r", encoding="utf-8") as result_file:
-                    for line in result_file:
-                        line = line.strip("\n")
-                        if line.startswith("Type:"):
-                            cols = line.split()
-                            f1 = float(cols[5])
-
-            elif self.EVAL_SCRIPTS[dataset.corpus] == "run_conlleval.sh":
-                with open("{}/{}.eval".format(args.logdir, dataset_name), "r", encoding="utf-8") as result_file:
-                    for line in result_file:
-                        line = line.strip("\n")
-                        if line.startswith("accuracy:"):
-                            f1 = float(line.split()[-1])
-            else:
-                print("Official evaluation of corpus \"{}\" with script \"{}\" not implemented".format(dataset.corpus, self.EVAL_SCRIPTS[dataset.corpus]), file=sys.stderr, flush=True)
-                # TODO: Raise exception
+        # Get the eval script
+        if dataset.corpus in self._EVAL_SCRIPTS:
+            eval_script = self._EVAL_SCRIPTS[dataset.corpus]
         else:
-            print("\"{}\" data of unknown corpus \"{}\" will be evaluated with the default seqeval F1 metric".format(dataset_name, dataset.corpus), file=sys.stderr, flush=True)
-            # TODO: predict() now returns the full two-column output as list of
-            # sentence strings, not only the tags as before ([['B-PER', 'O',
-            # 'B-PER', 'O'], ['O', 'O"]]). The following line would fail.
-            # I need to parse the second column out of the CoNLL-like
-            # two-column output. For now, I print not implemented.
-            #f1 = seqeval.metrics.f1_score(dataset.labels(), predicted_output)
-            print("NameTag3Model.predict_and_evaluate() not implemented for unknown corpus.", file=sys.stderr, flush=True)
-            sys.exit(1)
+            eval_script = self._eval_script_fallback(args.corpus)
+
+        # Run the eval script
+        print("\"{}\" data of corpus \"{}\" will be evaluated with an external script \"{}\"".format(dataset_name, dataset.corpus, eval_script), file=sys.stderr, flush=True)
+        command = "cd {} && ../../{} {} {} {}".format(args.logdir, eval_script, dataset_name, dataset.filename, filename)
+        os.system(command)
+
+        # Parse the eval script output
+        f1 = None
+        if eval_script == "run_cnec2.0_eval_nested_corrected.sh":
+            with open("{}/{}.eval".format(args.logdir, dataset_name), "r", encoding="utf-8") as result_file:
+                for line in result_file:
+                    line = line.strip("\n")
+                    if line.startswith("Type:"):
+                        cols = line.split()
+                        f1 = float(cols[5])
+        elif eval_script == "run_conlleval.sh":
+            with open("{}/{}.eval".format(args.logdir, dataset_name), "r", encoding="utf-8") as result_file:
+                for line in result_file:
+                    line = line.strip("\n")
+                    if line.startswith("accuracy:"):
+                        f1 = float(line.split()[-1])
+        else:
+            raise NotImplementedError("Parsing of the eval script \"{}\" output not implemented".format(eval_script))
 
         return f1
 
@@ -624,6 +608,15 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         self._latent_dim = args.latent_dim
         self._max_labels_per_token = args.max_labels_per_token
 
+        # Official eval stripts for nested corpora.
+        # CNEC 2.0 eval script is corrected in comparison to the original to not
+        # fail on zero division in case of very bad system predictions after the
+        # first few epochs of training.
+        self._EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh"}
+
+    def _eval_script_fallback(self, corpus):
+        raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given corpus (--corpus=\"{}\"). If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3ModelSeq2seq._EVAL_SCRIPTS.".format(corpus))
+
     # Never remove the training argument for magical reasons.
     # The magical reason being that the training argument must be set at least
     # once on the layer stack for Keras to infer the training parameters for
@@ -767,6 +760,21 @@ class NameTag3ModelSeq2seq(NameTag3Model):
 
 class NameTag3ModelClassification(NameTag3Model):
     """NameTag3 model with classification."""
+
+    def __init__(self, output_layer_dim, args, id2label):
+        super().__init__(output_layer_dim, args, id2label)
+
+        # Official eval stripts for flat corpora.
+        self._EVAL_SCRIPTS = {"english-conll": "run_conlleval.sh",
+                              "german-conll": "run_conlleval.sh",
+                              "spanish-conll": "run_conlleval.sh",
+                              "dutch-conll": "run_conlleval.sh",
+                              "czech-cnec2.0_conll": "run_conlleval.sh",
+                              "ukrainian-languk_conll": "run_conlleval.sh"}
+
+    def _eval_script_fallback(self, corpus):
+        print("NameTag 3 does not have the official evaluation script for the given corpus (--corpus=\"{}\"), reverting to the \"{}\" fallback. If you are training on a custom flat NE corpus and you have a different official evaluation script for it, you can register the script in NameTag3ModelClassification._EVAL_SCRIPTS.".format(corpus, self._EVAL_SCRIPTS["english-conll"]))
+        return self._EVAL_SCRIPTS["english-conll"]
 
     # Never remove the training argument for magical reasons.
     # The magical reason being that the training argument must be set at least
