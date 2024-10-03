@@ -139,8 +139,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.decoding == "seq2seq" and not args.context_type == "sentence":
-        print("Only --context_type=sentence is implemented for --decoding=seq2seq", file=sys.stderr)
-        sys.exit(1)
+        raise NotImplementedError("Only --context_type=sentence is implemented for --decoding=seq2seq")
 
     if args.prevent_all_dropouts:
         args.dropout = 0.
