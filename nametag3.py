@@ -236,9 +236,6 @@ if __name__ == "__main__":
         model = NameTag3ModelSeq2seq(len(train_collection.label2id().keys()) if train_collection else len(train_loaded.label2id().keys()),
                                      args,
                                      train_collection.id2label() if train_collection else train_loaded.id2label())
-    else:
-        print("Unknown value of --decoding={}".format(args.decoding), file=sys.stderr)
-        sys.exit(1)
 
     # Pretrain with frozen transformer
     if args.train_data and args.epochs_frozen:
