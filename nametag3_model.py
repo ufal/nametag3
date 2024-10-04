@@ -268,6 +268,105 @@ class NestedAccuracy(keras.metrics.Metric):
         return self._count / self._total if self._total else 0
 
 
+class NestedF1Score(keras.metrics.Metric):
+    """Custom Keras metric for span-level nested F1 score."""
+
+    def __init__(self, id2label, name="micro_f1", **kwargs):
+        super().__init__(name=name, **kwargs)
+        self._id2label = id2label
+        self._tp = 0
+        self._npred = 0
+        self._ntrue = 0
+
+    def _get_entities(self, encoded_labels, max_tokens=None, padding_mask=None):
+
+        entities = set()
+        token_count = 0
+        for s, sentence in enumerate(encoded_labels):
+
+            labels_on_current_token, sentence_tokens = 0, 0
+            open_ids, open_labels = [], []
+            for l, label in enumerate(sentence):
+                if label == nametag3_dataset.BATCH_PAD:
+                    break
+
+                if padding_mask and padding_mask[s][l]:
+                    break
+
+                if max_tokens and sentence_tokens >= max_tokens[s]:
+                    break
+
+                if label == nametag3_dataset.EOW:   # move to next token
+                    labels_on_current_token = 0
+                    token_count += 1
+                    sentence_tokens += 1
+                    continue
+
+                # Process next label
+                label = self._id2label[label]
+
+                if label == "O" or label in nametag3_dataset.CONTROL_LABELS:
+                    for open_id, open_label in zip(open_ids, open_labels):
+                        entities.add((open_label, open_id[0], open_id[-1]))
+                    open_ids, open_labels = [], []
+                else:
+                    if labels_on_current_token < len(open_ids): # previously open entities exist
+
+                        # Previous open entity ends here, close it and open a new entity instead
+                        if label.startswith("B-") or label.startswith("U-") or open_labels[labels_on_current_token] != label.split("-")[1]:
+                            entities.add((open_labels[labels_on_current_token], open_ids[labels_on_current_token][0], open_ids[labels_on_current_token][-1]))
+                            open_ids[labels_on_current_token] = [token_count]
+
+                        else: # entity continues
+                            open_ids[labels_on_current_token].append(token_count)
+
+                        open_labels[labels_on_current_token] = label.split("-")[1]
+
+                    else:   # new entity, no open entities, just append
+                        open_ids.append([token_count])
+                        open_labels.append(label.split("-")[1])
+
+                labels_on_current_token += 1
+
+            # end of sentence, close any open entities
+            for open_id, open_label in zip(open_ids, open_labels):
+                entities.add((open_label, open_id[0], open_id[-1]))
+
+        return entities
+
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        # Get true entities
+        true_entities = self._get_entities(y_true.tolist())
+
+        # Get pred entities
+        max_tokens = torch.sum(y_true == nametag3_dataset.EOW, dim=-1)
+        if y_pred.dim() == 3:   # y_pred training shape
+            y_pred = torch.argmax(y_pred, dim=-1)
+            padding_mask = y_true == nametag3_dataset.BATCH_PAD
+            pred_entities = self._get_entities(y_pred.tolist(), max_tokens=max_tokens.tolist(), padding_mask=padding_mask.tolist())
+        else:   # y_pred inference shape
+            pred_entities = self._get_entities(y_pred.tolist(), max_tokens=max_tokens.tolist())
+
+        # Update number of true and predicted entities
+        self._ntrue += len(true_entities)
+        self._npred += len(pred_entities)
+
+        # Update number of true positives
+        true_positives = pred_entities.intersection(true_entities)
+        self._tp += len(true_positives)
+
+    def reset_state(self):
+        self._tp = 0
+        self._npred = 0
+        self._ntrue = 0
+
+    def result(self):
+        precision = self._tp / self._npred if self._npred else 0
+        recall = self._tp / self._ntrue if self._ntrue else 0
+
+        return 2 * precision * recall / (precision + recall) if (precision + recall) else 0
+
+
 class SeqevalF1Score(keras.metrics.Metric):
     """Custom Keras metric for span-level F1 score."""
 
@@ -683,7 +782,7 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         return self.compute_metrics(x, y, y_pred)
 
     def _create_metrics(self):
-        return [NestedAccuracy(self._id2label, name="accuracy")]
+        return [NestedF1Score(self._id2label, name="micro_f1")]
 
     def yield_predicted_batches(self, dataset_name, dataset, dataloader, args, fw=None):
         """Yields batches with predicted nested labels for NameTag3Dataset.
