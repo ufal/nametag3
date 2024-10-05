@@ -238,36 +238,6 @@ class RestoreBestWeightsCallback(keras.callbacks.Callback):
         self.model.set_weights(self._best_weights)
 
 
-class NestedAccuracy(keras.metrics.Metric):
-    """Custom metric for per-token accuracy for nested NER."""
-
-    def __init__(self, id2label, name="accuracy", **kwargs):
-        super().__init__(name=name, **kwargs)
-        self._id2label = id2label
-        self._count = 0
-        self._total = 0
-
-    def update_state(self, y_true, y_pred, sample_weight=None):
-        # Dev data may generate different lengths of output than y_true.
-        if y_pred.dim() == 2:
-            return
-
-        mask = y_true != nametag3_dataset.BATCH_PAD
-
-        y_true = y_true[mask]
-        y_pred = torch.argmax(y_pred, dim=-1)[mask]
-
-        self._count += torch.sum(y_true == y_pred)
-        self._total += y_true.size(dim=0)
-
-    def reset_state(self):
-        self._count = 0
-        self._total = 0
-
-    def result(self):
-        return self._count / self._total if self._total else 0
-
-
 class NestedF1Score(keras.metrics.Metric):
     """Custom Keras metric for span-level nested F1 score."""
 
