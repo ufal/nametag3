@@ -222,7 +222,7 @@ class TorchTensorBoardCallback(keras.callbacks.Callback):
 
 class RestoreBestWeightsCallback(keras.callbacks.Callback):
 
-    def __init__(self, objective="val_macro_f1"):
+    def __init__(self, objective="val_macro_avg_f1"):
         self._best = None
         self._objective = objective
 
@@ -241,7 +241,7 @@ class RestoreBestWeightsCallback(keras.callbacks.Callback):
 class NestedF1Score(keras.metrics.Metric):
     """Custom Keras metric for span-level nested F1 score."""
 
-    def __init__(self, id2label, name="micro_f1", **kwargs):
+    def __init__(self, id2label, name="f1", **kwargs):
         super().__init__(name=name, **kwargs)
         self._id2label = id2label
         self._tp = 0
@@ -340,7 +340,7 @@ class NestedF1Score(keras.metrics.Metric):
 class SeqevalF1Score(keras.metrics.Metric):
     """Custom Keras metric for span-level F1 score."""
 
-    def __init__(self, id2label, name="micro_f1", **kwargs):
+    def __init__(self, id2label, name="f1", **kwargs):
         super().__init__(name=name, **kwargs)
         self._id2label = id2label
         self._tp = 0
@@ -415,8 +415,8 @@ class PLMLayer(keras.layers.Layer):
         return self._plm(keras.ops.maximum(inputs, 0), attention_mask=inputs > nametag3_dataset.BATCH_PAD).last_hidden_state
 
 
-class MacroDevF1(keras.callbacks.Callback):
-    """Computes macro F1 over dev datasets."""
+class MacroAverageDevF1(keras.callbacks.Callback):
+    """Computes macro average F1 over dev datasets."""
 
     def __init__(self, args, dev_datasets, dev_dataloaders):
         self._args = args
@@ -430,7 +430,7 @@ class MacroDevF1(keras.callbacks.Callback):
             dev_score = self.model.predict_and_evaluate("dev", self._dev_datasets[i], self._dev_dataloaders[i], self._args, epoch=epoch)
             dev_scores.append(dev_score)
             print("F1 on dev {} ({}): {:.4f}".format(i, self._dev_datasets[i].corpus, dev_score),  file=sys.stderr, flush=True)
-        logs["val_macro_f1"] = np.sum(dev_scores) / len(dev_scores)
+        logs["val_macro_avg_f1"] = np.sum(dev_scores) / len(dev_scores)
 
 
 #####################
@@ -619,12 +619,12 @@ class NameTag3Model(keras.Model):
         callbacks = []
 
         if dev_datasets and dev_dataloaders:
-            callbacks.append(MacroDevF1(self._args, dev_datasets, dev_dataloaders))
+            callbacks.append(MacroAverageDevF1(self._args, dev_datasets, dev_dataloaders))
 
         callbacks.append(TorchTensorBoardCallback(self._args.logdir))
 
         if dev_dataloader:
-            callbacks.append(RestoreBestWeightsCallback(objective="val_macro_f1"))
+            callbacks.append(RestoreBestWeightsCallback(objective="val_macro_avg_f1"))
 
         if save_best_checkpoint:
             if self._model_checkpoint == None:
@@ -632,7 +632,7 @@ class NameTag3Model(keras.Model):
                                                                          self._args.checkpoint_filename),
                                                                          save_best_only=True,
                                                                          save_weights_only=True,
-                                                                         monitor="val_macro_f1",
+                                                                         monitor="val_macro_avg_f1",
                                                                          mode="max",
                                                                          verbose=2)
 
@@ -752,7 +752,7 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         return self.compute_metrics(x, y, y_pred)
 
     def _create_metrics(self):
-        return [NestedF1Score(self._id2label, name="micro_f1")]
+        return [NestedF1Score(self._id2label, name="f1")]
 
     def yield_predicted_batches(self, dataset_name, dataset, dataloader, args, fw=None):
         """Yields batches with predicted nested labels for NameTag3Dataset.
@@ -862,7 +862,7 @@ class NameTag3ModelClassification(NameTag3Model):
         self._outputs = keras.layers.Dense(self._output_layer_dim)
 
     def _create_metrics(self):
-        return [SeqevalF1Score(self._id2label, name="micro_f1")]
+        return [SeqevalF1Score(self._id2label, name="f1")]
 
     def yield_predicted_batches(self, dataset_name, dataset, dataloader, args, fw=None, evaluating=False):
         """Yields batches with predicted flat labels for NameTag3Dataset.
