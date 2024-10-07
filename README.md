@@ -131,6 +131,74 @@ into a file, you can type:
 ```
 
 
+## NameTag 3 Client without Installation using basic Python
+
+The `nametag3_client.py` only requires basic Python and does not need any additional
+installed packages or downloading the trained models. By default, the script
+will call the NameTag 3 server. Do not send personal or private data unless you
+are authorized and comfortable with it being processed by NameTag 3.
+
+Usage:
+
+1. Get this script either by cloning the entire NameTag 3 repository:
+
+```sh
+git clone https://github.com/ufal/nametag3
+```
+
+or by simply downloading just `nametag3_client.py` specifically from the NameTag
+3 repository by opening
+
+```sh
+https://github.com/ufal/nametag3/blob/main/nametag3_client.py
+```
+
+and hitting the download button ("Download raw file").
+
+Save your text in a plaintext file, see an example in `examples/cs_input.txt`.
+At the command line, type the following command:
+
+```sh
+./nametag3_client.py examples/cs_input.txt
+```
+
+The output will be printed to the standard output. To redirect the output
+into a file, you can type:
+
+```sh
+./nametag3_client.py examples/cs_input.txt > output_file.xml
+```
+
+Or you can specify the output filename:
+
+```sh
+./nametag3_client.py examples/cs_input.txt --outfile=output_file.xml
+```
+
+Additionally, you can specify the language of your data or the exact required
+model for your data. The language options are `english`, `german`, `dutch`, `spanish`,
+`ukraininan`, and `czech` (lowercased):
+
+```sh
+./nametag3_client.py examples/en_input.txt --model=english > output_file.xml
+```
+
+The list of available models can be obtained by:
+
+```sh
+./nametag3_client.py --list_models
+```
+
+E.g.:
+
+```sh
+./nametag3_client.py examples/cs_input.txt --model=nametag3-czech-cnec2.0-240830
+```
+
+For other available input and output formats, as well as other options, see the
+script commandlind-line arguments.
+
+
 ## Installation
 
 1. Clone the repository:
