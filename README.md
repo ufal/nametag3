@@ -84,12 +84,12 @@ seq2seq decoding head is the head proposed by [Straková et al. (2019)](https://
 The software has been developed and tested on Linux and is run from the commandline.
 
 
-## NameTag 3 without Installation and without Python
+## NameTag 3 without Installation with curl
 
-For basic use without installation and without Python, see a simple script
-`nametag3_with_curl.sh` for accessing NameTag 3 webservice from the command line
-using curl. The script will call a server. Do not send personal or private data
-unless you are authorized and comfortable with it being processed by NameTag 3.
+For basic use without installation, see a simple script `nametag3_with_curl.sh`
+for accessing NameTag 3 webservice from the command line using curl. The script
+will call a server. Do not send personal or private data unless you are
+authorized and comfortable with it being processed by NameTag 3.
 
 Usage:
 
@@ -131,7 +131,7 @@ into a file, you can type:
 ```
 
 
-## NameTag 3 Client without Installation using basic Python
+## NameTag 3 Client without Installation with basic Python
 
 The `nametag3_client.py` only requires basic Python and does not need any additional
 installed packages or downloading the trained models. By default, the script

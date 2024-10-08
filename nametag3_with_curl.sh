@@ -10,9 +10,9 @@
 # A simple script for accessing NameTag 3 API using curl.
 #
 # This is a simple script for accessing NameTag 3 webservice from the command
-# line using curl. The script can run without Python installed. The script will
-# call a server. Do not send personal or private data unless you are authorized
-# and comfortable with it being processed by NameTag 3.
+# line using curl. The script will call a server. Do not send personal or
+# private data unless you are authorized and comfortable with it being
+# processed by NameTag 3.
 #
 # Usage:
 #
@@ -59,5 +59,5 @@ if [ "$#" -eq 2 ]; then
   model="$2"
 fi
 
-# Call the NameTag 3 server and extract the result from the response.
-curl -F data=@$input_file -F model=$model http://lindat.mff.cuni.cz/services/nametag/api/recognize | jq -j .result
+# Call the NameTag 3 server with curl and extract the result from the response with Python.
+curl -F data=@$input_file -F model=$model http://lindat.mff.cuni.cz/services/nametag/api/recognize | PYTHONIOENCODING=utf-8 python3 -c "import sys,json; sys.stdout.write(json.load(sys.stdin)['result'])"
