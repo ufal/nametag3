@@ -20,7 +20,8 @@ name="$1"
 gold="$2"
 system="$3"
 
-echo "Running external CNEC 2.0 nested evaluation on \"$name\" dataset with gold file \"$gold\" and system file \"$system\""
+# Debug print
+#echo "Running external CNEC 2.0 nested evaluation on \"$name\" dataset with gold file \"$gold\" and system file \"$system\""
 
 # Print system entities
 touch ${name}_system_entities.txt

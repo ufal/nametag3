@@ -19,7 +19,8 @@ name="$1"
 gold="$2"
 system="$3"
 
-echo "Running external CoNLL evaluation on \"$name\" dataset with gold file \"$gold\" and system file \"$system\""
+# Debug print
+#echo "Running external CoNLL evaluation on \"$name\" dataset with gold file \"$gold\" and system file \"$system\""
 
 # Create conlleval script input
 paste $(dirname $0)/${gold} ${system} | cut -f1,2,4 > ${name}_conlleval_input.conll
