@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding=utf-8
 #
-# Copyright 2021 Institute of Formal and Applied Linguistics, Faculty of
+# Copyright 2024 Institute of Formal and Applied Linguistics, Faculty of
 # Mathematics and Physics, Charles University, Czech Republic.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
