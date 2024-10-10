@@ -684,7 +684,7 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         self._EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh"}
 
     def _eval_script_fallback(self, corpus):
-        raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given corpus (--corpus=\"{}\"). If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3ModelSeq2seq._EVAL_SCRIPTS.".format(corpus))
+        raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3ModelSeq2seq._EVAL_SCRIPTS.")
 
     # Never remove the training argument for magical reasons.
     # The magical reason being that the training argument must be set at least
@@ -842,7 +842,7 @@ class NameTag3ModelClassification(NameTag3Model):
                               "ukrainian-languk_conll": "run_conlleval.sh"}
 
     def _eval_script_fallback(self, corpus):
-        print("NameTag 3 does not have the official evaluation script for the given corpus (--corpus=\"{}\"), reverting to the \"{}\" fallback. If you are training on a custom flat NE corpus and you have a different official evaluation script for it, you can register the script in NameTag3ModelClassification._EVAL_SCRIPTS.".format(corpus, self._EVAL_SCRIPTS["english-conll"]))
+        print("NameTag 3 does not have the official evaluation script for the given corpus, reverting to the \"{}\" fallback. If you are training on a custom flat NE corpus and you have the official evaluation script for it, you can register the script in NameTag3ModelClassification._EVAL_SCRIPTS.".format(self._EVAL_SCRIPTS["english-conll"]), file=sys.stderr, flush=True)
         return self._EVAL_SCRIPTS["english-conll"]
 
     # Never remove the training argument for magical reasons.
