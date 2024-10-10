@@ -196,7 +196,7 @@ E.g.:
 ```
 
 For other available input and output formats, as well as other options, see the
-script commandlind-line arguments.
+script command-line arguments.
 
 
 ## Installation
