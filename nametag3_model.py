@@ -842,7 +842,7 @@ class NameTag3ModelClassification(NameTag3Model):
                               "ukrainian-languk_conll": "run_conlleval.sh"}
 
     def _eval_script_fallback(self, corpus):
-        print("NameTag 3 does not have the official evaluation script for the given corpus, reverting to the \"{}\" fallback. If you are training on a custom flat NE corpus and you have the official evaluation script for it, you can register the script in NameTag3ModelClassification._EVAL_SCRIPTS.".format(self._EVAL_SCRIPTS["english-conll"]), file=sys.stderr, flush=True)
+        print("NameTag 3 does not have the official evaluation script for the given corpus, defaulting to the \"{}\" fallback".format(self._EVAL_SCRIPTS["english-conll"]), file=sys.stderr, flush=True)
         return self._EVAL_SCRIPTS["english-conll"]
 
     # Never remove the training argument for magical reasons.
