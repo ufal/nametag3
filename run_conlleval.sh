@@ -7,11 +7,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# This script evaluates the NameTag 3 output externally, both during training
-# and prediction phase, for flat corpora (CoNLL-2003 and CoNLL-2002), using the
-# official evaluation script conlleval.
+# This script evaluates the NameTag 3 output externally on dev data, for flat
+# NE corpora (e.g., CoNLL-2003 and CoNLL-2002), using the official evaluation
+# script conlleval.
 
-# Usage: ./run_conlleval.sh [dev|test] [gold_conll] [system_conll]
+# Usage: ./run_conlleval.sh [dev|test] gold_conll_file system_conll_file
 
 set -e
 
