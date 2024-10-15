@@ -7,12 +7,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# This script evaluates the NameTag 3 output externally, both during training
-# and prediction phase, for CNEC 2.0 (Czech Named Entity Corpus 2.0), using the
-# official distributed CNEC evaluation script
-# compare_ne_outputs_v3_corrected.pl, with corrections for zero division.
+# This script evaluates the NameTag 3 output externally on dev data, for the
+# nested CNEC 2.0 (Czech Named Entity Corpus 2.0), using the official
+# distributed CNEC evaluation script compare_ne_outputs_v3_corrected.pl, with
+# corrections for zero division.
 
-# Usage: ./run_cnec2.0_eval_nested_corrected.sh [dev|test] [gold_conll] [system_conll]
+# Usage: ./run_cnec2.0_eval_nested_corrected.sh [dev|test] gold_conll_file system_conll_file
 
 set -e
 
