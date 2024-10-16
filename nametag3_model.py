@@ -396,7 +396,7 @@ class GatherLayer(keras.layers.Layer):
 class PLMLayer(keras.layers.Layer):
     """Custom Keras layer as a wrapper around PyTorch AutoModel."""
 
-    def __init__(self, hf_plm, hidden_dropout_prob=None, attention_probs_dropout_prob=None):
+    def __init__(self, hf_plm, tokenizer, hidden_dropout_prob=None, attention_probs_dropout_prob=None):
         super().__init__()
 
         config = transformers.AutoConfig.from_pretrained(hf_plm)
@@ -404,6 +404,8 @@ class PLMLayer(keras.layers.Layer):
         plm = transformers.AutoModel.from_pretrained(hf_plm,
                                                      hidden_dropout_prob = hidden_dropout_prob if hidden_dropout_prob else config.hidden_dropout_prob,
                                                      attention_probs_dropout_prob = attention_probs_dropout_prob if attention_probs_dropout_prob else config.attention_probs_dropout_prob)
+
+        plm.resize_token_embeddings(len(tokenizer))
 
         self._plm = plm
         self._plm_config = plm.config
@@ -441,13 +443,14 @@ class MacroAverageDevF1(keras.callbacks.Callback):
 class NameTag3Model(keras.Model):
     """NameTag3 neural network class."""
 
-    def __init__(self, output_layer_dim, args, id2label):
+    def __init__(self, output_layer_dim, args, id2label, tokenizer):
         """Constructs the model."""
 
         super().__init__()
 
         # Layers
         self._embeddings = PLMLayer(args.hf_plm,
+                                    tokenizer,
                                     hidden_dropout_prob=args.transformer_hidden_dropout_prob,
                                     attention_probs_dropout_prob=args.transformer_attention_probs_dropout_prob)
         self._gathered = GatherLayer()
@@ -671,8 +674,8 @@ class NameTag3Model(keras.Model):
 class NameTag3ModelSeq2seq(NameTag3Model):
     """NameTag3 model with seq2seq decoding."""
 
-    def __init__(self, output_layer_dim, args, id2label):
-        super().__init__(output_layer_dim, args, id2label)
+    def __init__(self, output_layer_dim, args, id2label, tokenizer):
+        super().__init__(output_layer_dim, args, id2label, tokenizer)
 
         self._latent_dim = args.latent_dim
         self._max_labels_per_token = args.max_labels_per_token
@@ -830,8 +833,8 @@ class NameTag3ModelSeq2seq(NameTag3Model):
 class NameTag3ModelClassification(NameTag3Model):
     """NameTag3 model with classification."""
 
-    def __init__(self, output_layer_dim, args, id2label):
-        super().__init__(output_layer_dim, args, id2label)
+    def __init__(self, output_layer_dim, args, id2label, tokenizer):
+        super().__init__(output_layer_dim, args, id2label, tokenizer)
 
         # Official eval stripts for flat corpora.
         self._EVAL_SCRIPTS = {"english-conll": "run_conlleval.sh",

@@ -127,6 +127,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", default=42, type=int, help="Random seed.")
     parser.add_argument("--subword_masking", default=0.0, type=float, help="Mask subwords with the given probability.")
     parser.add_argument("--steps_per_epoch", default=None, type=int, help="Steps per epoch. Default None (epoch iterates over all data).")
+    parser.add_argument("--tagsets", default=None, type=str, help="For multitagset training: tagsets corresponding to the given corpora, separated by comma.")
     parser.add_argument("--temperature", default=2.0, type=float, help="Value of temperature for temperature sampling.")
     parser.add_argument("--test_data", default=None, type=str, help="Test data.")
     parser.add_argument("--time", default=False, action="store_true", help="Measure prediction time.")
@@ -176,6 +177,8 @@ if __name__ == "__main__":
     del logargs["save_best_checkpoint"]
     del logargs["seed"]
     del logargs["subword_masking"]
+    if hasattr(logargs, "tagsets"):
+        del logargs["tagsets"]
     del logargs["temperature"]
     del logargs["test_data"]
     del logargs["threads"]
@@ -204,7 +207,7 @@ if __name__ == "__main__":
     tokenizer = transformers.AutoTokenizer.from_pretrained(args.hf_plm,
                                                            add_prefix_space = args.hf_plm in ["roberta-base", "roberta-large", "ufal/robeczech-base"])
 
-    # Load the data
+    # We load the training data only to get the mappings, nothing else is used.
     train_loaded=None
     if args.load_checkpoint:
         train_loaded = NameTag3DatasetCollection(args)
@@ -230,11 +233,13 @@ if __name__ == "__main__":
     if args.decoding == "classification":
         model = NameTag3ModelClassification(len(train_collection.label2id().keys()) if train_collection else len(train_loaded.label2id().keys()),
                                             args,
-                                            train_collection.id2label() if train_collection else train_loaded.id2label())
+                                            train_collection.id2label() if train_collection else train_loaded.id2label(),
+                                            tokenizer)
     elif args.decoding == "seq2seq":
         model = NameTag3ModelSeq2seq(len(train_collection.label2id().keys()) if train_collection else len(train_loaded.label2id().keys()),
                                      args,
-                                     train_collection.id2label() if train_collection else train_loaded.id2label())
+                                     train_collection.id2label() if train_collection else train_loaded.id2label(),
+                                     tokenizer)
 
     # Pretrain with frozen transformer
     if args.train_data and args.epochs_frozen:

@@ -75,6 +75,7 @@ class NameTag3DatasetCollection:
 
         self._datasets = []
         self._corpora = args.corpus.split(",") if args.corpus else None
+        self._tagsets = args.tagsets.split(",") if hasattr(args, "tagsets") and args.tagsets else None
         seq2seq = args.decoding == "seq2seq"
 
         if filenames:
@@ -85,7 +86,8 @@ class NameTag3DatasetCollection:
                                                       train_dataset=train_collection.datasets[-1] if train_collection else None,
                                                       seq2seq=seq2seq,
                                                       previous_dataset=self._datasets[-1] if i and not train_collection else None,
-                                                      corpus=self._corpora[i] if self._corpora else str("corpus {}".format(i+1))))
+                                                      corpus=self._corpora[i] if self._corpora else str("corpus {}".format(i+1)),
+                                                      tagset=self._tagsets[i] if self._tagsets else None))
         # Reading from text (used by the server) allows creation of exactly one
         # dataset in the collection.
         else:
@@ -95,7 +97,8 @@ class NameTag3DatasetCollection:
                                                   train_dataset=train_collection.datasets[-1] if train_collection else None,
                                                   seq2seq=seq2seq,
                                                   previous_dataset=None,
-                                                  corpus=args.corpus if args.corpus else "corpus 1"))
+                                                  corpus=args.corpus if args.corpus else "corpus 1",
+                                                  tagset=self._tagsets[0] if self._tagsets else None))
 
     def label2id(self):
         return self._datasets[-1].label2id()

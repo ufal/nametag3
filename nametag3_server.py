@@ -156,9 +156,9 @@ class Models:
 
             # Construct the network
             if self._args.decoding == "classification":
-                self.model = NameTag3ModelClassification(len(self._train_collection.label2id().keys()), self._args, self._train_collection.id2label())
+                self.model = NameTag3ModelClassification(len(self._train_collection.label2id().keys()), self._args, self._train_collection.id2label(), self.hf_tokenizer)
             elif self._args.decoding == "seq2seq":
-                self.model = NameTag3ModelSeq2seq(len(self._train_collection.label2id().keys()), self._args, self._train_collection.id2label())
+                self.model = NameTag3ModelSeq2seq(len(self._train_collection.label2id().keys()), self._args, self._train_collection.id2label(), self.hf_tokenizer)
             else:
                 # TODO: do something
                 pass

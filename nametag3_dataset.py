@@ -69,7 +69,7 @@ class NameTag3Dataset:
     FORMS = 0
     TAGS = 1
 
-    def __init__(self, args, tokenizer=None, filename=None, text=None, train_dataset=None, seq2seq=False, previous_dataset=None, corpus=None):
+    def __init__(self, args, tokenizer=None, filename=None, text=None, train_dataset=None, seq2seq=False, previous_dataset=None, corpus=None, tagset=None):
         """Load dataset from file in CoNLL-like format.
 
         Arguments:
@@ -87,10 +87,19 @@ class NameTag3Dataset:
         """
 
         self._filename = filename
-        self._tokenizer = tokenizer
         self._corpus = corpus
         self._seq2seq = seq2seq
         self._args = args
+        self._tokenizer = tokenizer
+        self._tagset = tagset
+
+        if self._tagset:
+            # Add a new token for tokenization to the tokenizer, if not added already.
+            self._tagset_token = "[{}]".format(tagset)
+            new_tokens = [self._tagset_token]
+            new_tokens = set(new_tokens) - set(tokenizer.vocab.keys())
+            tokenizer.add_tokens(list(new_tokens))
+            self._tagset_token_id = self._tokenizer.convert_tokens_to_ids(self._tagset_token)
 
         # Data structures
         self._forms = []
@@ -184,8 +193,9 @@ class NameTag3Dataset:
 
             # Empty splits OR cannot fit entire sentence in current split OR
             # new document found => make new split.
+            room_for_tagset_token = self._tagset != None    # 1 if self._tagset is used
             if len(input_ids_splits) == 0 \
-                    or len(input_ids_splits[-1]) + len(input_ids[s]) - 1 >= self._tokenizer.model_max_length \
+                    or len(input_ids_splits[-1]) + len(input_ids[s]) - 1 >= self._tokenizer.model_max_length - room_for_tagset_token \
                     or (self._corpus and self._corpus in ["english-conll", "german-conll", "dutch-conll"] and strings[s][0] == "-DOCSTART-"):
                 if len(input_ids_splits):   # close previous split
                     input_ids_splits[-1].append(self._tokenizer.sep_token_id)
@@ -293,7 +303,9 @@ class NameTag3Dataset:
                         print("Word generated without corresponding token by the HF tokenizer, creating artificial token \"{}\". Word: \"{}\". Sentence: {}".format(self._tokenizer.unk_token, batch_inputs[s][word_index], batch_inputs[s]), file=sys.stderr, flush=True)
 
                     # Sentence length exceeded maximum length, start new context.
-                    if len(input_ids[-1]) + token_span.end - token_span.start + 1 >= self._tokenizer.model_max_length:
+                    # 1 for ending [SEP] and optionally another 1 for the tagset token
+                    room_for_special_tokens = 2 if self._tagset else 1
+                    if len(input_ids[-1]) + token_span.end - token_span.start + room_for_special_tokens >= self._tokenizer.model_max_length:
                         input_ids[-1].append(self._tokenizer.sep_token_id)
 
                         input_ids.append([self._tokenizer.cls_token_id])
@@ -340,6 +352,9 @@ class NameTag3Dataset:
         elif context_type in ["sentence", "max_context", "document"]:
 
             if context_type in ["max_context", "document"]:
+                if self._tagset:
+                    raise NotImplementedError("--tagset_token not implemented for --context_type=max_context and --context_type=document")
+
                 inputs_with_context = []
                 context = []
                 for s in range(len(input_ids)):   # sentences
@@ -370,6 +385,12 @@ class NameTag3Dataset:
                         assert word_ids[s][i] < self._tokenizer.model_max_length
 
                 input_ids = inputs_with_context
+
+        # Add the tagset token right after [CLS] and increase word_ids accordingly.
+        if self._tagset:
+            for s in range(len(input_ids)):
+                input_ids[s].insert(1, self._tagset_token_id)
+                word_ids[s] = [x+1 for x in word_ids[s]]
 
         # For seq2seq, unpack the complex labels into the sublabels.
         if self._seq2seq:
