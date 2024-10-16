@@ -8,7 +8,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""NameTag3Dataset class to handle NE tagged data."""
+"""NameTag3Dataset class to handle NE datasets."""
 
 
 import io
@@ -64,13 +64,13 @@ class NameTag3TorchDataset(torch.utils.data.Dataset):
 
 
 class NameTag3Dataset:
-    """Class for loading NE tagged datasets in CoNLL-like format."""
+    """Class for handling NE datasets."""
 
     FORMS = 0
     TAGS = 1
 
-    def __init__(self, args, tokenizer=None, filename=None, text=None, train_dataset=None, seq2seq=False, previous_dataset=None, corpus=None, tagset=None):
-        """Load dataset from file in CoNLL-like format.
+    def __init__(self, args, tokenizer=None, filename=None, text=None, train_dataset=None, previous_dataset=None, seq2seq=False, corpus=None, tagset=None):
+        """Load the dataset from a two column CoNLL-like format.
 
         Arguments:
             args: main script args from argparse.
@@ -82,8 +82,9 @@ class NameTag3Dataset:
             previous_dataset: If given, the id2label and label2id from the
                 previous dataset in the collection are reused, and new items
                 may be added.
-            seq2seq: seq2seq encoding of labels.
+            seq2seq: seq2seq encoding of labels (for nested NEs).
             corpus: Corpus name.
+            tagset: Tagset name.
         """
 
         self._filename = filename
@@ -339,7 +340,6 @@ class NameTag3Dataset:
         return self._label2id_sublabel if self._seq2seq else self._label2id
 
     def _get_data_for_nn_dataset(self, context_type, keep_original_casing):
-        """Create backend independent data for TF or Torch dataset."""
 
         # Tokenize and reorganize factors accordingly
         input_ids, word_ids, strings, outputs = self._tokenize(keep_original_casing=keep_original_casing)
