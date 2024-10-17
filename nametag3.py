@@ -196,13 +196,6 @@ if __name__ == "__main__":
     )
     os.makedirs(args.logdir, exist_ok=True)
 
-    # Save model options
-    if args.save_best_checkpoint:
-        print("Checkpoint will be saved to logdir: {}/model".format(args.logdir), file=sys.stderr, flush=True)
-        os.makedirs("{}/model".format(args.logdir), exist_ok=True)
-        with open("{}/model/options.json".format(args.logdir), mode="w") as options_file:
-            json.dump(vars(args), options_file, sort_keys=True)
-
     # Load the tokenizer (once, as a singleton)
     tokenizer = transformers.AutoTokenizer.from_pretrained(args.hf_plm,
                                                            add_prefix_space = args.hf_plm in ["roberta-base", "roberta-large", "ufal/robeczech-base"])
@@ -218,7 +211,7 @@ if __name__ == "__main__":
         train_collection = NameTag3DatasetCollection(args, tokenizer=tokenizer, filenames=args.train_data, train_collection=train_loaded)
         train_dataloader = train_collection.create_torch_dataloader(args, shuffle=True, sampling=args.sampling)
         if args.save_best_checkpoint:
-            train_collection.save_mappings("{}/model/mappings.pickle".format(args.logdir))
+            train_collection.save_mappings(args.logdir)
 
     if args.dev_data:
         dev_collection = NameTag3DatasetCollection(args, tokenizer=tokenizer, filenames=args.dev_data, train_collection=train_collection if args.train_data else train_loaded)

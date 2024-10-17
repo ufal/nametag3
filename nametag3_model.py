@@ -26,6 +26,7 @@ See postprocess method for correct bracketing and BIO formatting of the output.
 """
 
 
+import json
 import os
 import sys
 import time
@@ -630,6 +631,14 @@ class NameTag3Model(keras.Model):
             callbacks.append(RestoreBestWeightsCallback(objective="val_macro_avg_f1"))
 
         if save_best_checkpoint:
+            print("Checkpoint will be saved to logdir: {}/model".format(self._args.logdir), file=sys.stderr, flush=True)
+
+            # Save model training arguments
+            os.makedirs("{}/model".format(self._args.logdir), exist_ok=True)
+            with open("{}/model/options.json".format(self._args.logdir), mode="w") as options_file:
+                json.dump(vars(self._args), options_file, sort_keys=True)
+
+            # Add ModelCheckpoint callback
             if self._model_checkpoint == None:
                 self._model_checkpoint = keras.callbacks.ModelCheckpoint(os.path.join(self._args.logdir, "model",
                                                                          self._args.checkpoint_filename),

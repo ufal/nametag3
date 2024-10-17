@@ -14,6 +14,7 @@
 import io
 import math
 import pickle
+import os
 import sys
 
 import numpy as np
@@ -165,4 +166,5 @@ class NameTag3DatasetCollection:
         self._datasets = [dataset]
 
     def save_mappings(self, path):
-        self._datasets[-1].save_mappings(path)
+        os.makedirs("{}/model".format(path), exist_ok=True)
+        self._datasets[-1].save_mappings("{}/model/mappings.pickle".format(path))
