@@ -10,7 +10,7 @@
 
 """NameTag3Model class.
 
-The main prediction method is predict:
+The main prediction method is predict():
 
 Predicts labels for NameTag3Dataset (see nametag3_dataset.py).
 No sanity check of the neural network output is done, which means:
@@ -18,11 +18,12 @@ No sanity check of the neural network output is done, which means:
 1. Neither correct nesting of the entities, nor correct entity openings and
 closing (correct bracketing) are guaranteed.
 
-2. Labels and their encoding (BIO vs. IOB) is the exact same as in the model
-trained from and underlying corpus (i.e., IOB as found in English CoNLL-2003
-dataset).
+2. Labels and their encoding (BIO aka IOB-2 vs. IOB) is the exact same as in
+the model trained from and underlying corpus (i.e., IOB as found in English
+CoNLL-2003 dataset).
 
-See postprocess method for correct bracketing and BIO formatting of the output.
+See the postprocess() method for correct bracketing and BIO (IOB-2) formatting
+of the output.
 """
 
 
@@ -195,7 +196,7 @@ class DecoderPrediction(keras.layers.Layer):
 
 
 class TorchTensorBoardCallback(keras.callbacks.Callback):
-    """Torch tensorboard to avoid dependency on tf."""
+    """Torch tensorboard to avoid dependency on tensorflow."""
 
     def __init__(self, path):
         self._path = path
@@ -240,7 +241,7 @@ class RestoreBestWeightsCallback(keras.callbacks.Callback):
 
 
 class NestedF1Score(keras.metrics.Metric):
-    """Custom Keras metric for span-level nested F1 score."""
+    """Custom Keras metric for nested span-based micro F1 score."""
 
     def __init__(self, id2label, name="f1", **kwargs):
         super().__init__(name=name, **kwargs)
@@ -339,7 +340,7 @@ class NestedF1Score(keras.metrics.Metric):
 
 
 class SeqevalF1Score(keras.metrics.Metric):
-    """Custom Keras metric for span-level F1 score."""
+    """Custom Keras metric for flat span-based micro F1 score."""
 
     def __init__(self, id2label, name="f1", **kwargs):
         super().__init__(name=name, **kwargs)
@@ -388,7 +389,12 @@ class SeqevalF1Score(keras.metrics.Metric):
 
 
 class GatherLayer(keras.layers.Layer):
-    """Custom Keras layer for gathering embeddings by indices."""
+    """Custom Keras layer for gathering embeddings by indices.
+
+    This is necessary because we have to predict label(s) on each word, which
+    can however be subtokenized into subwords (input_ids) by the HF tokenizer.
+    The indices mark the first subword (input_id) of each word.
+    """
 
     def call(self, inputs, word_ids):
         return keras.ops.take_along_axis(inputs, keras.ops.expand_dims(keras.ops.maximum(word_ids, 0), nametag3_dataset.BATCH_PAD), axis=1)
@@ -406,6 +412,7 @@ class PLMLayer(keras.layers.Layer):
                                                      hidden_dropout_prob = hidden_dropout_prob if hidden_dropout_prob else config.hidden_dropout_prob,
                                                      attention_probs_dropout_prob = attention_probs_dropout_prob if attention_probs_dropout_prob else config.attention_probs_dropout_prob)
 
+        # Resize because of potentially added tagset tokens.
         plm.resize_token_embeddings(len(tokenizer))
 
         self._plm = plm
@@ -419,7 +426,7 @@ class PLMLayer(keras.layers.Layer):
 
 
 class MacroAverageDevF1(keras.callbacks.Callback):
-    """Computes macro average F1 over dev datasets."""
+    """Computes macro average span-based micro F1 over all dev datasets."""
 
     def __init__(self, args, dev_datasets, dev_dataloaders):
         self._args = args
@@ -462,11 +469,12 @@ class NameTag3Model(keras.Model):
         self._args = args
         self._id2label = id2label
 
-        # Callback for saving best checkpoint
+        # Callback for saving the best checkpoint. Saved here for transfering
+        # between frozen pretraining and fine-tuning.
         self._model_checkpoint = None
 
     def compile(self, training_batches=0, frozen=False):
-        """Compiles the model for either frozen or fine-tuning training."""
+        """Compiles the model for either frozen training or fine-tuning."""
 
         self._embeddings.trainable = not frozen
 
@@ -495,7 +503,7 @@ class NameTag3Model(keras.Model):
                 metrics=self._create_metrics())
 
     def predict_and_evaluate(self, dataset_name, dataset, dataloader, args, epoch=None):
-        """External evaluation with the official evaluation scripts."""
+        """Prediction and external evaluation with the official evaluation scripts."""
 
         # Predict the output
         filename = "{}_{}_system_predictions{}.conll".format(dataset_name, dataset.corpus, "_{}".format(epoch+1) if epoch != None else "")
@@ -536,7 +544,9 @@ class NameTag3Model(keras.Model):
     def postprocess(self, text):
         """Postprocesses predicted output.
 
-        Guarantees correctly bracketed and unique NEs."""
+        Guarantees correctly bracketed and unique NEs in the BIO (IOB-2)
+        format.
+        """
 
         forms, previous_labels, starts = [], [], []
         entities = dict()   # (start, end, label)
@@ -663,14 +673,14 @@ class NameTag3Model(keras.Model):
 
         No sanity check of the neural network output is done, which means:
 
-        1. Neither correct nesting of the entities, nor correct entity openings
-        and closing (correct bracketing) are guaranteed.
+        1. Neither correct nesting of the entities, nor correct entity openings and
+        closing (correct bracketing) are guaranteed.
 
-        2. Labels and their encoding (BIO vs. IOB) is the exact same as in the
-        model trained from and underlying corpus (i.e., IOB found in English
+        2. Labels and their encoding (BIO aka IOB-2 vs. IOB) is the exact same as in
+        the model trained from and underlying corpus (i.e., IOB as found in English
         CoNLL-2003 dataset).
 
-        Please see self.postprocess() for correct bracketing and BIO formatting
+        See the postprocess() method for correct bracketing and BIO (IOB-2) formatting
         of the output.
         """
 
@@ -681,7 +691,7 @@ class NameTag3Model(keras.Model):
 
 
 class NameTag3ModelSeq2seq(NameTag3Model):
-    """NameTag3 model with seq2seq decoding."""
+    """NameTag3 model with seq2seq decoding for nested NEs."""
 
     def __init__(self, output_layer_dim, args, id2label, tokenizer):
         super().__init__(output_layer_dim, args, id2label, tokenizer)
@@ -771,14 +781,14 @@ class NameTag3ModelSeq2seq(NameTag3Model):
 
         No sanity check of the neural network output is done, which means:
 
-        1. Neither correct nesting of the entities, nor correct entity openings
-        and closing (correct bracketing) are guaranteed.
+        1. Neither correct nesting of the entities, nor correct entity openings and
+        closing (correct bracketing) are guaranteed.
 
-        2. Labels and their encoding (BIO vs. IOB) is the exact same as in the
-        model trained from and underlying corpus (i.e., IOB found in English
+        2. Labels and their encoding (BIO aka IOB-2 vs. IOB) is the exact same as in
+        the model trained from and underlying corpus (i.e., IOB as found in English
         CoNLL-2003 dataset).
 
-        Please see self.postprocess() for correct bracketing and BIO formatting
+        See the postprocess() method for correct bracketing and BIO (IOB-2) formatting
         of the output.
         """
 
@@ -881,14 +891,14 @@ class NameTag3ModelClassification(NameTag3Model):
 
         No sanity check of the neural network output is done, which means:
 
-        1. Neither correct nesting of the entities, nor correct entity openings
-        and closing (correct bracketing) are guaranteed.
+        1. Neither correct nesting of the entities, nor correct entity openings and
+        closing (correct bracketing) are guaranteed.
 
-        2. Labels and their encoding (BIO vs. IOB) is the exact same as in the
-        model trained from and underlying corpus (i.e., IOB found in English
+        2. Labels and their encoding (BIO aka IOB-2 vs. IOB) is the exact same as in
+        the model trained from and underlying corpus (i.e., IOB as found in English
         CoNLL-2003 dataset).
 
-        Please see self.postprocess() for correct bracketing and BIO formatting
+        See the postprocess() method for correct bracketing and BIO (IOB-2) formatting
         of the output.
         """
 
