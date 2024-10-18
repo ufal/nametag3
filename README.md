@@ -204,14 +204,14 @@ script command-line arguments.
 1. Clone the repository:
 
 ```sh
-$ git clone https://github.com/ufal/nametag3
+git clone https://github.com/ufal/nametag3
 ```
 
 2. Create a Python virtual environment with torch called `venv` in the root of this directory:
 
 ```sh
-$ python3 -m venv venv
-$ venv/bin/pip3 install -r requirements.txt
+python3 -m venv venv
+venv/bin/pip3 install -r requirements.txt
 ```
 
 3. Download the NameTag 3 Models:
@@ -221,7 +221,7 @@ Download the [latest version of NameTag 3 models](https://ufal.mff.cuni.cz/namet
 4. The `nametag3.py` script is then called using the Python installed in your virtual environment:
 
 ```sh
-$ venv/bin/python3 ./nametag3.py [--argument=value]
+venv/bin/python3 ./nametag3.py [--argument=value]
 ```
 
 
@@ -230,7 +230,7 @@ $ venv/bin/python3 ./nametag3.py [--argument=value]
 The main NameTag 3 script is called `nametag3.py`. Example NER prediction usage:
 
 ```sh
-$ venv/bin/python3 nametag3.py \
+venv/bin/python3 nametag3.py \
   --load_checkpoint=models/nametag3-multilingual-conll-240830/ \
   --test_data=examples/en_input.conll
 ```
@@ -251,7 +251,7 @@ Example usage of multilingual traning for flat NER with a softmax classification
 head:
 
 ```sh
-$ venv/bin/python3 nametag3.py \
+venv/bin/python3 nametag3.py \
   --batch_size=8 \
   --context_type="split_document" \
   --corpus="english-conll,german-conll,spanish-conll,dutch-conll,czech-cnec2.0_conll,ukrainian-languk_conll" \
@@ -294,7 +294,7 @@ a `nametag3-english-conll-240830` model. The first model is also known as
 `multilingual-conll`, and the second one which is also named `eng` and `en`:
 
 ```sh
-$ venv/bin/python3 nametag3_server.py 8001 multilingual-conll \
+venv/bin/python3 nametag3_server.py 8001 multilingual-conll \
   nametag3-multilingual-conll-240830:multilingual-conll models/nametag3-multilingual-conll-240830/ multilingual_acknowledgements \
   nametag3-english-conll-240830:eng:en models/nametag3-multilingual-conll-240830/ english_acknowledgements \
 ```
@@ -302,7 +302,7 @@ $ venv/bin/python3 nametag3_server.py 8001 multilingual-conll \
 Example server usage with three monolingual models:
 
 ```sh
-$ venv/bin/python3 nametag3_server.py 8001 cs \
+venv/bin/python3 nametag3_server.py 8001 cs \
     czech-cnec2.0-240830:cs:ces models/nametag3-czech-cnec2.0-240830/ czech-cnec2_acknowledgements \
     english-conll-240830:en:eng models/nametag3-english-conll-240830/ english-conll_acknowledgements \
     spanish-conll-240830:es:spa models/nametag3-spanish-conll-240830/ spanish-conll_acknowledgements
