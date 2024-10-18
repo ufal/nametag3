@@ -87,7 +87,7 @@ class NameTag3DatasetCollection:
                                                       train_dataset=train_collection.datasets[-1] if train_collection else None,
                                                       seq2seq=seq2seq,
                                                       previous_dataset=self._datasets[-1] if i and not train_collection else None,
-                                                      corpus=self._corpora[i] if self._corpora else str("corpus {}".format(i+1)),
+                                                      corpus=self._corpora[i] if self._corpora else str("corpus_{}".format(i+1)),
                                                       tagset=self._tagsets[i] if self._tagsets else None))
         # Reading from text (used by the server) allows creation of exactly one
         # dataset in the collection.
@@ -101,6 +101,14 @@ class NameTag3DatasetCollection:
                                                   corpus=args.corpus if args.corpus else "corpus 1",
                                                   tagset=self._tagsets[0] if self._tagsets else None))
 
+        # Create dataloaders if any data given.
+        self._dataloader, self._dataloaders = None, None
+        if filenames or text:
+            self._dataloader = self.create_torch_dataloader(args,
+                                                            shuffle=True if not train_collection else False,
+                                                            sampling=args.sampling if not train_collection else "concatenate")
+            self._dataloaders = self.create_torch_dataloaders(args, shuffle=True if not train_collection else False)
+
     def label2id(self):
         return self._datasets[-1].label2id()
 
@@ -110,6 +118,17 @@ class NameTag3DatasetCollection:
     @property
     def datasets(self):
         return self._datasets
+
+    @property
+    def dataloader(self):
+        return self._dataloader
+
+    @property
+    def dataloaders(self):
+        return self._dataloaders
+
+    def training_batches(self):
+        return len(self._dataloader) if self._dataloader else 0
 
     def _weights(self, datasets, sampling, temperature):
         if sampling == "proportional":

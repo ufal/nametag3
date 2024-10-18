@@ -428,18 +428,26 @@ class PLMLayer(keras.layers.Layer):
 class MacroAverageDevF1(keras.callbacks.Callback):
     """Computes macro average span-based micro F1 over all dev datasets."""
 
-    def __init__(self, args, dev_datasets, dev_dataloaders):
+    def __init__(self, args, dev_collection):
         self._args = args
-        self._dev_datasets = dev_datasets
-        self._dev_dataloaders = dev_dataloaders
+        self._dev_datasets = dev_collection.datasets
 
     def on_epoch_end(self, epoch, logs=None):
         print("Dev evaluation after epoch {}".format(epoch+1), file=sys.stderr, flush=True)
+
         dev_scores = []
         for i in range(len(self._dev_datasets)):
-            dev_score = self.model.predict_and_evaluate("dev", self._dev_datasets[i], self._dev_dataloaders[i], self._args, epoch=epoch)
+
+            # Predict the output and write to file
+            predictions_filename = "{}_{}_predictions{}.conll".format("dev", self._dev_datasets[i].corpus, "_{}".format(epoch+1) if epoch != None else "")
+            with open("{}/{}".format(self._args.logdir, predictions_filename), "w", encoding="utf-8") as predictions_file:
+                self.model.predict("dev", self._dev_datasets[i], self._args, fw=predictions_file)
+
+            # Evaluate
+            dev_score = self._dev_datasets[i].evaluate("dev", predictions_filename, self._args.logdir)
             dev_scores.append(dev_score)
-            print("F1 on dev {} ({}): {:.4f}".format(i, self._dev_datasets[i].corpus, dev_score),  file=sys.stderr, flush=True)
+            print("F1 on dev {} ({}): {:.4f}".format(i, self._dev_datasets[i].corpus, dev_score), file=sys.stderr, flush=True)
+
         logs["val_macro_avg_f1"] = np.sum(dev_scores) / len(dev_scores)
 
 
@@ -455,6 +463,12 @@ class NameTag3Model(keras.Model):
         """Constructs the model."""
 
         super().__init__()
+
+        # Process the command-line args.
+        if args.prevent_all_dropouts:
+            args.dropout = 0.
+            args.transformer_hidden_dropout_prob = 0.
+            args.transformer_attention_probs_dropout_prob = 0.
 
         # Layers
         self._embeddings = PLMLayer(args.hf_plm,
@@ -501,45 +515,6 @@ class NameTag3Model(keras.Model):
                 optimizer=keras.optimizers.Adam(learning_rate=schedule),
                 loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True, ignore_class=nametag3_dataset.BATCH_PAD),
                 metrics=self._create_metrics())
-
-    def predict_and_evaluate(self, dataset_name, dataset, dataloader, args, epoch=None):
-        """Prediction and external evaluation with the official evaluation scripts."""
-
-        # Predict the output
-        filename = "{}_{}_system_predictions{}.conll".format(dataset_name, dataset.corpus, "_{}".format(epoch+1) if epoch != None else "")
-        with open("{}/{}".format(args.logdir, filename), "w", encoding="utf-8") as prediction_file:
-            predicted_output = self.predict(dataset_name, dataset, dataloader, args, prediction_file, evaluating=True)
-
-        # Get the eval script
-        if dataset.corpus in self._EVAL_SCRIPTS:
-            eval_script = self._EVAL_SCRIPTS[dataset.corpus]
-        else:
-            eval_script = self._eval_script_fallback(args.corpus)
-
-        # Run the eval script
-        print("\"{}\" data of corpus \"{}\" will be evaluated with an external script \"{}\"".format(dataset_name, dataset.corpus, eval_script), file=sys.stderr, flush=True)
-        command = "cd {} && ../../{} {} {} {}".format(args.logdir, eval_script, dataset_name, dataset.filename, filename)
-        os.system(command)
-
-        # Parse the eval script output
-        f1 = None
-        if eval_script == "run_cnec2.0_eval_nested_corrected.sh":
-            with open("{}/{}.eval".format(args.logdir, dataset_name), "r", encoding="utf-8") as result_file:
-                for line in result_file:
-                    line = line.strip("\n")
-                    if line.startswith("Type:"):
-                        cols = line.split()
-                        f1 = float(cols[5])
-        elif eval_script == "run_conlleval.sh":
-            with open("{}/{}.eval".format(args.logdir, dataset_name), "r", encoding="utf-8") as result_file:
-                for line in result_file:
-                    line = line.strip("\n")
-                    if line.startswith("accuracy:"):
-                        f1 = float(line.split()[-1])
-        else:
-            raise NotImplementedError("Parsing of the eval script \"{}\" output not implemented".format(eval_script))
-
-        return f1
 
     def postprocess(self, text):
         """Postprocesses predicted output.
@@ -627,18 +602,16 @@ class NameTag3Model(keras.Model):
         if hasattr(self, "optimizer"):
             self.optimizer.iterations.assign(0)
 
-    def fit(self, epochs, train_dataloader, dev_dataloader=None, dev_datasets=None, dev_dataloaders=None, save_best_checkpoint=False, initial_epoch=0):
+    def fit(self, epochs, train_collection, dev_collection=None, save_best_checkpoint=False, initial_epoch=0):
         """"Trains (frozen or fine-tuning) the model."""
 
         callbacks = []
 
-        if dev_datasets and dev_dataloaders:
-            callbacks.append(MacroAverageDevF1(self._args, dev_datasets, dev_dataloaders))
+        if dev_collection:
+            callbacks.append(MacroAverageDevF1(self._args, dev_collection))
+            callbacks.append(RestoreBestWeightsCallback(objective="val_macro_avg_f1"))
 
         callbacks.append(TorchTensorBoardCallback(self._args.logdir))
-
-        if dev_dataloader:
-            callbacks.append(RestoreBestWeightsCallback(objective="val_macro_avg_f1"))
 
         if save_best_checkpoint:
             print("Checkpoint will be saved to logdir: {}/model".format(self._args.logdir), file=sys.stderr, flush=True)
@@ -660,15 +633,15 @@ class NameTag3Model(keras.Model):
 
             callbacks.append(self._model_checkpoint)
 
-        super().fit(train_dataloader,
-                    validation_data=dev_dataloader,
+        super().fit(train_collection.dataloader,
+                    validation_data=dev_collection.dataloader,
                     epochs=epochs,
                     verbose=2,
                     steps_per_epoch=self._args.steps_per_epoch,
                     callbacks=callbacks,
                     initial_epoch=initial_epoch)
 
-    def predict(self, dataset_name, dataset, dataloader, args, fw=None, evaluating=False):
+    def predict(self, dataset_name, dataset, args, fw=None):
         """Predicts labels for NameTag3Dataset.
 
         No sanity check of the neural network output is done, which means:
@@ -685,7 +658,7 @@ class NameTag3Model(keras.Model):
         """
 
         output = []
-        for batch in self.yield_predicted_batches(dataset_name, dataset, dataloader, args, fw=fw):
+        for batch in self.yield_predicted_batches(dataset_name, dataset, args, fw=fw):
             output.extend(batch)
         return output
 
@@ -698,15 +671,6 @@ class NameTag3ModelSeq2seq(NameTag3Model):
 
         self._latent_dim = args.latent_dim
         self._max_labels_per_token = args.max_labels_per_token
-
-        # Official eval stripts for nested corpora.
-        # CNEC 2.0 eval script is corrected in comparison to the original to not
-        # fail on zero division in case of very bad system predictions after the
-        # first few epochs of training.
-        self._EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh"}
-
-    def _eval_script_fallback(self, corpus):
-        raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3ModelSeq2seq._EVAL_SCRIPTS.")
 
     # Never remove the training argument for magical reasons.
     # The magical reason being that the training argument must be set at least
@@ -776,7 +740,7 @@ class NameTag3ModelSeq2seq(NameTag3Model):
     def _create_metrics(self):
         return [NestedF1Score(self._id2label, name="f1")]
 
-    def yield_predicted_batches(self, dataset_name, dataset, dataloader, args, fw=None):
+    def yield_predicted_batches(self, dataset_name, dataset, args, fw=None):
         """Yields batches with predicted nested labels for NameTag3Dataset.
 
         No sanity check of the neural network output is done, which means:
@@ -802,7 +766,7 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         predicted_tag_ids = []  # all predicted tag ids (sentences x tags)
         batch_output = []       # accumulated batch output to be yielded
         forms = dataset.forms()
-        batch_iterator = iter(dataloader)
+        batch_iterator = iter(dataset.dataloader)
         yield_batch = False     # yield batch at the end of sentence
 
         for s in range(len(forms)): # original sentences
@@ -855,18 +819,6 @@ class NameTag3ModelClassification(NameTag3Model):
     def __init__(self, output_layer_dim, args, id2label, tokenizer):
         super().__init__(output_layer_dim, args, id2label, tokenizer)
 
-        # Official eval stripts for flat corpora.
-        self._EVAL_SCRIPTS = {"english-conll": "run_conlleval.sh",
-                              "german-conll": "run_conlleval.sh",
-                              "spanish-conll": "run_conlleval.sh",
-                              "dutch-conll": "run_conlleval.sh",
-                              "czech-cnec2.0_conll": "run_conlleval.sh",
-                              "ukrainian-languk_conll": "run_conlleval.sh"}
-
-    def _eval_script_fallback(self, corpus):
-        print("NameTag 3 does not have the official evaluation script for the given corpus, defaulting to the \"{}\" fallback".format(self._EVAL_SCRIPTS["english-conll"]), file=sys.stderr, flush=True)
-        return self._EVAL_SCRIPTS["english-conll"]
-
     # Never remove the training argument for magical reasons.
     # The magical reason being that the training argument must be set at least
     # once on the layer stack for Keras to infer the training parameters for
@@ -886,7 +838,7 @@ class NameTag3ModelClassification(NameTag3Model):
     def _create_metrics(self):
         return [SeqevalF1Score(self._id2label, name="f1")]
 
-    def yield_predicted_batches(self, dataset_name, dataset, dataloader, args, fw=None, evaluating=False):
+    def yield_predicted_batches(self, dataset_name, dataset, args, fw=None):
         """Yields batches with predicted flat labels for NameTag3Dataset.
 
         No sanity check of the neural network output is done, which means:
@@ -914,7 +866,7 @@ class NameTag3ModelClassification(NameTag3Model):
         t = 0                   # tags within sentences in predicted_tag_ids
         batch_output = []       # accumulated batch output to be yielded
         forms = dataset.forms()
-        batch_iterator = iter(dataloader)
+        batch_iterator = iter(dataset.dataloader)
         yield_batch = False     # yield batch at the end of sentence
 
         for s in range(len(forms)): # original sentences

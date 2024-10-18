@@ -139,14 +139,6 @@ if __name__ == "__main__":
     parser.add_argument("--warmup_epochs_frozen", default=1, type=int, help="Number of warmup epochs for frozen pretraining.")
     args = parser.parse_args()
 
-    if args.decoding == "seq2seq" and not args.context_type == "sentence":
-        raise NotImplementedError("Only --context_type=sentence is implemented for --decoding=seq2seq")
-
-    if args.prevent_all_dropouts:
-        args.dropout = 0.
-        args.transformer_hidden_dropout_prob = 0.
-        args.transformer_attention_probs_dropout_prob = 0.
-
     # During inference, transfer crucial train args
     if args.load_checkpoint:
         with open("{}/options.json".format(args.load_checkpoint), mode="r") as options_file:
@@ -156,6 +148,7 @@ if __name__ == "__main__":
         for key in ["checkpoint_filename", "context_type", "decoding", "hf_plm", "keep_original_casing"]:
             args.__dict__[key] = train_args.__dict__[key]
 
+    # Set threads and random seed
     torch.set_num_threads(args.threads)
     torch.set_num_interop_threads(args.threads)
 
@@ -196,7 +189,7 @@ if __name__ == "__main__":
     )
     os.makedirs(args.logdir, exist_ok=True)
 
-    # Load the tokenizer (once, as a singleton)
+    # Load the tokenizer
     tokenizer = transformers.AutoTokenizer.from_pretrained(args.hf_plm,
                                                            add_prefix_space = args.hf_plm in ["roberta-base", "roberta-large", "ufal/robeczech-base"])
 
@@ -209,18 +202,15 @@ if __name__ == "__main__":
     train_collection=None
     if args.train_data:
         train_collection = NameTag3DatasetCollection(args, tokenizer=tokenizer, filenames=args.train_data, train_collection=train_loaded)
-        train_dataloader = train_collection.create_torch_dataloader(args, shuffle=True, sampling=args.sampling)
         if args.save_best_checkpoint:
             train_collection.save_mappings(args.logdir)
 
+    dev_collection=None
     if args.dev_data:
         dev_collection = NameTag3DatasetCollection(args, tokenizer=tokenizer, filenames=args.dev_data, train_collection=train_collection if args.train_data else train_loaded)
-        dev_dataloader = dev_collection.create_torch_dataloader(args, shuffle=False, sampling="concatenate")
-        dev_dataloaders = dev_collection.create_torch_dataloaders(args, shuffle=False)
 
     if args.test_data:
         test_collection = NameTag3DatasetCollection(args, tokenizer=tokenizer, filenames=args.test_data, train_collection=train_collection if args.train_data else train_loaded)
-        test_dataloaders = test_collection.create_torch_dataloaders(args, shuffle=False)
 
     # Construct the model
     if args.decoding == "classification":
@@ -237,16 +227,14 @@ if __name__ == "__main__":
     # Pretrain with frozen transformer
     if args.train_data and args.epochs_frozen:
         print("Pretraining with frozen transformer for {} epochs.".format(args.epochs_frozen), file=sys.stderr, flush=True)
-        model.compile(training_batches=len(train_dataloader) if args.train_data else 0, frozen=True)
+        model.compile(training_batches=train_collection.training_batches(), frozen=True)
         model.fit(args.epochs_frozen,
-                  train_dataloader,
-                  dev_dataloader=dev_dataloader if args.dev_data else None,
-                  dev_datasets=dev_collection.datasets if args.dev_data else None,
-                  dev_dataloaders=dev_dataloaders if args.dev_data else None,
+                  train_collection,
+                  dev_collection=dev_collection,
                   save_best_checkpoint=args.save_best_checkpoint)
 
     # Compile the model
-    model.compile(training_batches=len(train_dataloader) if args.train_data else 0, frozen=False)
+    model.compile(training_batches=train_collection.training_batches() if train_collection else 0, frozen=False)
 
     # Load checkpoint
     if args.load_checkpoint:
@@ -262,10 +250,8 @@ if __name__ == "__main__":
     if args.train_data and args.epochs:
         print("Finetuning for {} epochs.".format(args.epochs), file=sys.stderr, flush=True)
         model.fit(args.epochs_frozen + args.epochs,
-                  train_dataloader,
-                  dev_dataloader=dev_dataloader if args.dev_data else None,
-                  dev_datasets=dev_collection.datasets if args.dev_data else None,
-                  dev_dataloaders=dev_dataloaders if args.dev_data else None,
+                  train_collection,
+                  dev_collection=dev_collection,
                   save_best_checkpoint=args.save_best_checkpoint,
                   initial_epoch=args.epochs_frozen)
 
@@ -273,14 +259,23 @@ if __name__ == "__main__":
     if args.test_data:
         test_scores = []
         for i, test_dataset in enumerate(test_collection.datasets):
-            print("Predicting dataset {} ({})".format(i, test_dataset.corpus), file=sys.stderr, flush=True)
+            predictions_filename = "{}_{}_predictions.conll".format("test", test_dataset.corpus)
+            print("Predicting dataset {} ({}), predictions will be saved to \"{}\"".format(i+1, test_dataset.corpus, os.path.join(args.logdir, predictions_filename)), file=sys.stderr, flush=True)
+
+            with open(os.path.join(args.logdir, predictions_filename), "w", encoding="utf-8") as predictions_file:
+                model.predict("test", test_dataset, args, fw=predictions_file)
 
             if args.evaluate_test_data:
-                test_score = model.predict_and_evaluate("test", test_dataset, test_dataloaders[i], args)
+                test_score = test_dataset.evaluate("test", predictions_filename, args.logdir)
                 print("Test F1 ({}): {:.4f}".format(test_dataset.corpus, test_score), file=sys.stderr, flush=True)
                 test_scores.append(test_score)
-            else:
-                model.predict("test", test_dataset, test_dataloaders[i], args, fw=sys.stdout, evaluating=False)
 
         if test_scores:
             print("Macro avg F1: {:.4f}".format(np.average(test_scores)), file=sys.stderr, flush=True)
+
+        # If only one dataset, print to stdout too. We had this in previous
+        # versions, so keeping for compatibility with older pipelines users
+        # might still have.
+        if len(test_collection.datasets) == 1:
+            with open(os.path.join(args.logdir, predictions_filename), "r") as fr:
+                print(fr.read(), end="")

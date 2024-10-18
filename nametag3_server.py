@@ -173,10 +173,10 @@ class Models:
                 raise RuntimeError("Cannot load tokenizer from {}".format(tokenizer_path))
 
 
-        def yield_predicted_batches(self, dataset, dataloader):
+        def yield_predicted_batches(self, dataset):
             time_start = time.time()
 
-            for batch_output in self.model.yield_predicted_batches("test", dataset, dataloader, self.args):
+            for batch_output in self.model.yield_predicted_batches("test", dataset, self.args):
                 yield batch_output
 
             time_end = time.time()
@@ -602,9 +602,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
 
                     # Handle non-empty requests by running the neural network.
                     else:
-                        dataloader = test_collection.create_torch_dataloader(model.args)
-
-                        for batch_output in model.yield_predicted_batches(test_collection.datasets[-1], dataloader):
+                        for batch_output in model.yield_predicted_batches(test_collection.datasets[-1]):
 
                             # Sentences and tokens processed in this batch
                             batch_sentences = sentences[n_sentences_in_batches:n_sentences_in_batches+len(batch_output)]

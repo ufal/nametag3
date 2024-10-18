@@ -12,6 +12,7 @@
 
 
 import io
+import os
 import pickle
 import sys
 import time
@@ -87,6 +88,9 @@ class NameTag3Dataset:
             tagset: Tagset name.
         """
 
+        if args.decoding == "seq2seq" and not args.context_type == "sentence":
+            raise NotImplementedError("Only --context_type=sentence is implemented for --decoding=seq2seq")
+
         self._filename = filename
         self._corpus = corpus
         self._seq2seq = seq2seq
@@ -125,6 +129,24 @@ class NameTag3Dataset:
             if seq2seq:
                 self._label2id_sublabel = {key:value for key, value in CONTROL_LABELS_DICT.items()}
                 self._id2label_sublabel = [tag for tag in CONTROL_LABELS]
+
+        # Official eval scripts
+        if self._seq2seq:
+            # Official eval stripts for nested corpora.
+
+            # CNEC 2.0 eval script is corrected in comparison to the original to not
+            # fail on zero division in case of very bad system predictions after the
+            # first few epochs of training.
+            self._EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh"}
+
+        else:
+            # Official eval stripts for flat corpora.
+            self._EVAL_SCRIPTS = {"english-conll": "run_conlleval.sh",
+                                  "german-conll": "run_conlleval.sh",
+                                  "spanish-conll": "run_conlleval.sh",
+                                  "dutch-conll": "run_conlleval.sh",
+                                  "czech-cnec2.0_conll": "run_conlleval.sh",
+                                  "ukrainian-languk_conll": "run_conlleval.sh"}
 
         # Load the sentences
         if filename:
@@ -185,6 +207,11 @@ class NameTag3Dataset:
         if filename:
             print("Read {} sentences from \"{}\" in {:.2f} seconds".format(len(self._forms), filename, end_time-start_time), file=sys.stderr, flush=True)
 
+        # Create dataloader if any data given.
+        if filename or text:
+            self._dataloader = self.create_torch_dataloader(args,
+                                                            shuffle=True if not train_dataset else False)
+
     def _split_document(self, input_ids, word_ids, strings, outputs):
         """Reorganize to max_context window splits instead sentences."""
 
@@ -224,6 +251,10 @@ class NameTag3Dataset:
             assert len(input_ids_splits[-1]) < self._tokenizer.model_max_length
 
         return input_ids_splits, word_ids_splits, strings_splits, outputs_splits
+
+    @property
+    def dataloader(self):
+        return self._dataloader
 
     @property
     def sentence_lens(self):
@@ -410,5 +441,48 @@ class NameTag3Dataset:
         return NameTag3TorchDataset(input_ids, word_ids, outputs)
 
     def create_torch_dataloader(self, args, shuffle=False):
-        dataset = self.create_torch_dataset(args)
-        return torch.utils.data.DataLoader(dataset, collate_fn=pad_collate, batch_size=args.batch_size, shuffle=shuffle)
+        torch_dataset = self.create_torch_dataset(args)
+        return torch.utils.data.DataLoader(torch_dataset, collate_fn=pad_collate, batch_size=args.batch_size, shuffle=shuffle)
+
+    def _eval_script(self):
+        if self._corpus in self._EVAL_SCRIPTS:
+            return self._EVAL_SCRIPTS[self._corpus]
+        else:
+            if self._seq2seq:
+                raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given nested corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3Dataset._EVAL_SCRIPTS.")
+            else:
+                print("NameTag 3 does not have the official evaluation script for the given flat corpus, defaulting to the \"{}\" fallback for flat corpora".format(self._EVAL_SCRIPTS["english-conll"]), file=sys.stderr, flush=True)
+                return self._EVAL_SCRIPTS["english-conll"]
+
+    def evaluate(self, dataset_type, predictions_filename, logdir):
+        """Evaluate NEs in predictions_filename against the dataset's gold NEs.
+
+        Evaluate NEs in predictions_filename against the dataset's gold NEs
+        using the dataset's official evaluation script.
+        """
+
+        # Run the eval script
+        eval_script = self._eval_script()
+        print("\"{}\" data of corpus \"{}\" will be evaluated with an external script \"{}\"".format(dataset_type, self._corpus, eval_script), file=sys.stderr, flush=True)
+        command = "cd {} && ../../{} {} {} {}".format(logdir, eval_script, dataset_type, self._filename, predictions_filename)
+        os.system(command)
+
+        # Parse the eval script output
+        f1 = None
+        if eval_script == "run_cnec2.0_eval_nested_corrected.sh":
+            with open("{}/{}.eval".format(logdir, dataset_type), "r", encoding="utf-8") as result_file:
+                for line in result_file:
+                    line = line.strip("\n")
+                    if line.startswith("Type:"):
+                        cols = line.split()
+                        f1 = float(cols[5])
+        elif eval_script == "run_conlleval.sh":
+            with open("{}/{}.eval".format(logdir, dataset_type), "r", encoding="utf-8") as result_file:
+                for line in result_file:
+                    line = line.strip("\n")
+                    if line.startswith("accuracy:"):
+                        f1 = float(line.split()[-1])
+        else:
+            raise NotImplementedError("Parsing of the eval script \"{}\" output not implemented".format(eval_script))
+
+        return f1
