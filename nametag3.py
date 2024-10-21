@@ -120,6 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("--name", default=None, type=str, help="Experiment name.")
     parser.add_argument("--hf_plm", default=None, type=str, help="HF pre-trained model name.")
     parser.add_argument("--load_checkpoint", default=None, type=str, help="Load previously saved checkpoint.")
+    parser.add_argument("--postprocess", default=False, action="store_true", help="If enabled, performs a sanity check on the predicted test output to ensure entities are correctly nested and unique.")
     parser.add_argument("--prevent_all_dropouts", default=False, action="store_true", help="If True, sets --dropout=0., --transformer_hidden_dropout_probs=0. and --transformer_attention_probs_dropout_prob=0.")
     parser.add_argument("--remove_optimizer_from_checkpoint", default=False, action="store_true", help="If True, removes the optimizer from the loaded checkpoint and saves the checkpoint.")
     parser.add_argument("--sampling", default="concatenate", choices=["proportional", "uniform", "concatenate", "temperature"], help="Sampling strategy for multilingual datasets.")
@@ -259,23 +260,29 @@ if __name__ == "__main__":
     if args.test_data:
         test_scores = []
         for i, test_dataset in enumerate(test_collection.datasets):
+            # Predict and save the predicted output to the output file.
             predictions_filename = "{}_{}_predictions.conll".format("test", test_dataset.corpus)
             print("Predicting dataset {} ({}), predictions will be saved to \"{}\"".format(i+1, test_dataset.corpus, os.path.join(args.logdir, predictions_filename)), file=sys.stderr, flush=True)
+            predicted_output = "".join(model.predict("test", test_dataset, args))
+
+            # Postprocess if --postprocess enabled.
+            if args.postprocess:
+                predicted_output = model.postprocess(predicted_output)
 
             with open(os.path.join(args.logdir, predictions_filename), "w", encoding="utf-8") as predictions_file:
-                model.predict("test", test_dataset, args, fw=predictions_file)
+                print(predicted_output, file=predictions_file, end="")
 
+            # If there is only one dataset, print to stdout too. We had this in
+            # previous versions, so keep this for compatibility with older
+            # pipelines that users might still have.
+            if len(test_collection.datasets) == 1:
+                print(predicted_output, end="")
+
+            # Evaluate.
             if args.evaluate_test_data:
                 test_score = test_dataset.evaluate("test", predictions_filename, args.logdir)
-                print("Test F1 ({}): {:.4f}".format(test_dataset.corpus, test_score), file=sys.stderr, flush=True)
+                print("Test F1 ({}): {:.4f}".format(test_dataset.corpus, test_score), file=sys.stderr)
                 test_scores.append(test_score)
 
         if test_scores:
-            print("Macro avg F1: {:.4f}".format(np.average(test_scores)), file=sys.stderr, flush=True)
-
-        # If only one dataset, print to stdout too. We had this in previous
-        # versions, so keeping for compatibility with older pipelines users
-        # might still have.
-        if len(test_collection.datasets) == 1:
-            with open(os.path.join(args.logdir, predictions_filename), "r") as fr:
-                print(fr.read(), end="")
+            print("Macro avg F1: {:.4f}".format(np.average(test_scores)), file=sys.stderr)

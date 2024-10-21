@@ -440,8 +440,9 @@ class MacroAverageDevF1(keras.callbacks.Callback):
 
             # Predict the output and write to file
             predictions_filename = "{}_{}_predictions{}.conll".format("dev", self._dev_datasets[i].corpus, "_{}".format(epoch+1) if epoch != None else "")
-            with open("{}/{}".format(self._args.logdir, predictions_filename), "w", encoding="utf-8") as predictions_file:
-                self.model.predict("dev", self._dev_datasets[i], self._args, fw=predictions_file)
+            predicted_output = "".join(self.model.predict("dev", self._dev_datasets[i], self._args))
+            with open(os.path.join(self._args.logdir, predictions_filename), "w", encoding="utf-8") as predictions_file:
+                print(predicted_output, file=predictions_file, end="")
 
             # Evaluate
             dev_score = self._dev_datasets[i].evaluate("dev", predictions_filename, self._args.logdir)
@@ -641,7 +642,7 @@ class NameTag3Model(keras.Model):
                     callbacks=callbacks,
                     initial_epoch=initial_epoch)
 
-    def predict(self, dataset_name, dataset, args, fw=None):
+    def predict(self, dataset_name, dataset, args):
         """Predicts labels for NameTag3Dataset.
 
         No sanity check of the neural network output is done, which means:
@@ -658,8 +659,8 @@ class NameTag3Model(keras.Model):
         """
 
         output = []
-        for batch in self.yield_predicted_batches(dataset_name, dataset, args, fw=fw):
-            output.extend(batch)
+        for batch_output in self.yield_predicted_batches(dataset_name, dataset, args):
+            output.extend(batch_output)
         return output
 
 
@@ -740,7 +741,7 @@ class NameTag3ModelSeq2seq(NameTag3Model):
     def _create_metrics(self):
         return [NestedF1Score(self._id2label, name="f1")]
 
-    def yield_predicted_batches(self, dataset_name, dataset, args, fw=None):
+    def yield_predicted_batches(self, dataset_name, dataset, args):
         """Yields batches with predicted nested labels for NameTag3Dataset.
 
         No sanity check of the neural network output is done, which means:
@@ -774,9 +775,11 @@ class NameTag3ModelSeq2seq(NameTag3Model):
 
             t = 0
             for f in range(len(forms[s])):  # original words
-
                 # Not enough sentences predicted or sentence split between
                 # batches => predict next batch.
+                # TODO: This will always lead to the first sentence being
+                # yielded separately in the first batch actually, add
+                # a condition to prevent this.
                 if s >= len(predicted_tag_ids) or (t >= len(predicted_tag_ids[s]) and len(predicted_tag_ids) < len(forms)):
                     inputs, _ = next(batch_iterator)
                     for sentence_predicted_tag_ids in self.predict_on_batch(inputs):
@@ -796,13 +799,8 @@ class NameTag3ModelSeq2seq(NameTag3Model):
                 label = "|".join(labels) if labels else "O"
 
                 batch_output[-1] += "{}\t{}\n".format(forms[s][f], label)
-                if fw:
-                    print("{}\t{}".format(forms[s][f], label), file=fw)
 
             batch_output[-1] += "\n"
-
-            if fw:
-                print("", file=fw)
 
             if yield_batch:
                 yield batch_output
@@ -838,7 +836,7 @@ class NameTag3ModelClassification(NameTag3Model):
     def _create_metrics(self):
         return [SeqevalF1Score(self._id2label, name="f1")]
 
-    def yield_predicted_batches(self, dataset_name, dataset, args, fw=None):
+    def yield_predicted_batches(self, dataset_name, dataset, args):
         """Yields batches with predicted flat labels for NameTag3Dataset.
 
         No sanity check of the neural network output is done, which means:
@@ -879,6 +877,9 @@ class NameTag3ModelClassification(NameTag3Model):
                     predicted_s += 1    # move to the next sentence split
 
                     # Not enough sentences predicted => predict next batch.
+                    # TODO: This will always lead to the first sentence being
+                    # yielded separately in the first batch actually, add
+                    # a condition to prevent this.
                     if predicted_s >= len(predicted_tag_ids):
                         inputs, _ = next(batch_iterator)
                         _, word_ids = inputs
@@ -896,13 +897,8 @@ class NameTag3ModelClassification(NameTag3Model):
                 t += 1
 
                 batch_output[-1] += "{}\t{}\n".format(forms[s][f], label)
-                if fw:
-                    print("{}\t{}".format(forms[s][f], label), file=fw)
 
             batch_output[-1] += "\n"
-
-            if fw:
-                print("", file=fw)
 
             if yield_batch:
                 yield batch_output
