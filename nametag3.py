@@ -144,8 +144,6 @@ if __name__ == "__main__":
     if args.load_checkpoint:
         with open("{}/options.json".format(args.load_checkpoint), mode="r") as options_file:
             train_args = argparse.Namespace(**json.load(options_file))
-        parser.parse_args(namespace=train_args)
-
         for key in ["checkpoint_filename", "context_type", "decoding", "hf_plm", "keep_original_casing"]:
             args.__dict__[key] = train_args.__dict__[key]
 
@@ -158,36 +156,25 @@ if __name__ == "__main__":
 
     # Create logdir
     logargs = dict(vars(args).items())
-    del logargs["checkpoint_filename"]
+
     if args.corpus and len(args.corpus.split(",")) > 1:
         logargs["corpus"]="multilingual"
-    del logargs["dev_data"]
-    del logargs["keep_original_casing"]
-    del logargs["load_checkpoint"]
-    del logargs["logdir"]
-    del logargs["max_labels_per_token"]
-    del logargs["max_sentences_train"]
-    del logargs["sampling"]
-    del logargs["save_best_checkpoint"]
-    del logargs["seed"]
-    del logargs["subword_masking"]
-    if hasattr(logargs, "tagsets"):
-        del logargs["tagsets"]
-    del logargs["temperature"]
-    del logargs["test_data"]
-    del logargs["threads"]
-    del logargs["time"]
-    del logargs["train_data"]
-    del logargs["warmup_epochs"]
-    del logargs["warmup_epochs_frozen"]
 
-    args.logdir = "{}/{}-{}-{}".format(
-        args.logdir,
-        os.path.basename(__file__),
-        datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S"),
-        ",".join(("{}={}".format(re.sub("(.)[^_]*_?", r"\1", key), re.sub("^.*/", "", value) if type(value) == str else value)
-                  for key, value in sorted(logargs.items())))
-    )
+    for key in ["checkpoint_filename", "dev_data", "keep_original_casing",
+                "load_checkpoint", "logdir", "max_labels_per_token",
+                "max_sentences_train", "prevent_all_dropouts", "sampling",
+                "save_best_checkpoint", "seed", "subword_masking", "tagsets",
+                "temperature", "test_data", "threads", "time", "train_data",
+                "transformer_hidden_dropout_prob",
+                "transformer_attention_probs_dropout_prob", "warmup_epochs",
+                "warmup_epochs_frozen"]:
+        del logargs[key]
+
+    args.logdir = os.path.join(args.logdir,
+                               "{}-{}-{}".format(os.path.basename(__file__),
+                                                datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S"),
+                                                ",".join(("{}={}".format(re.sub("(.)[^_]*_?", r"\1", key), re.sub("^.*/", "", value) if type(value) == str else value)
+                                                          for key, value in sorted(logargs.items())))))
     os.makedirs(args.logdir, exist_ok=True)
 
     # Load the tokenizer
@@ -241,7 +228,7 @@ if __name__ == "__main__":
     if args.load_checkpoint:
         model.load_checkpoint(os.path.join(args.load_checkpoint, args.checkpoint_filename))
         if args.remove_optimizer_from_checkpoint:
-            new_checkpoint_filename = "{}/{}_wo_optimizer.weights.h5".format(args.load_checkpoint, args.checkpoint_filename[:-len(".weights.h5")])
+            new_checkpoint_filename = os.path.join(args.logdir, "{}_wo_optimizer.weights.h5".format(args.load_checkpoint, args.checkpoint_filename[:-len(".weights.h5")]))
             print("Saving checkpoint without optimizer to {}".format(new_checkpoint_filename), file=sys.stderr, flush=True)
             model.optimizer = None
             model.save_weights(new_checkpoint_filename)

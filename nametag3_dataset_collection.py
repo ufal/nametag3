@@ -77,7 +77,6 @@ class NameTag3DatasetCollection:
         self._datasets = []
         self._corpora = args.corpus.split(",") if args.corpus else None
         self._tagsets = args.tagsets.split(",") if hasattr(args, "tagsets") and args.tagsets else None
-        seq2seq = args.decoding == "seq2seq"
 
         if filenames:
             for i, filename in enumerate(filenames.split(",")):
@@ -85,7 +84,6 @@ class NameTag3DatasetCollection:
                                                       tokenizer=tokenizer,
                                                       filename=filename,
                                                       train_dataset=train_collection.datasets[-1] if train_collection else None,
-                                                      seq2seq=seq2seq,
                                                       previous_dataset=self._datasets[-1] if i and not train_collection else None,
                                                       corpus=self._corpora[i] if self._corpora else str("corpus_{}".format(i+1)),
                                                       tagset=self._tagsets[i] if self._tagsets else None))
@@ -96,7 +94,6 @@ class NameTag3DatasetCollection:
                                                   tokenizer=tokenizer,
                                                   text=text,
                                                   train_dataset=train_collection.datasets[-1] if train_collection else None,
-                                                  seq2seq=seq2seq,
                                                   previous_dataset=None,
                                                   corpus=args.corpus if args.corpus else "corpus 1",
                                                   tagset=self._tagsets[0] if self._tagsets else None))

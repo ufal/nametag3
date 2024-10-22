@@ -70,7 +70,7 @@ class NameTag3Dataset:
     FORMS = 0
     TAGS = 1
 
-    def __init__(self, args, tokenizer=None, filename=None, text=None, train_dataset=None, previous_dataset=None, seq2seq=False, corpus=None, tagset=None):
+    def __init__(self, args, tokenizer=None, filename=None, text=None, train_dataset=None, previous_dataset=None, corpus=None, tagset=None):
         """Load the dataset from a two column CoNLL-like format.
 
         Arguments:
@@ -83,7 +83,6 @@ class NameTag3Dataset:
             previous_dataset: If given, the id2label and label2id from the
                 previous dataset in the collection are reused, and new items
                 may be added.
-            seq2seq: seq2seq encoding of labels (for nested NEs).
             corpus: Corpus name.
             tagset: Tagset name.
         """
@@ -93,7 +92,7 @@ class NameTag3Dataset:
 
         self._filename = filename
         self._corpus = corpus
-        self._seq2seq = seq2seq
+        self._seq2seq = args.decoding == "seq2seq"
         self._args = args
         self._tokenizer = tokenizer
         self._tagset = tagset
@@ -114,19 +113,19 @@ class NameTag3Dataset:
         if train_dataset:
             self._label2id = train_dataset._label2id
             self._id2label = train_dataset._id2label
-            if seq2seq:
+            if self._seq2seq:
                 self._label2id_sublabel = train_dataset._label2id_sublabel
                 self._id2label_sublabel = train_dataset._id2label_sublabel
         elif previous_dataset:
             self._label2id = previous_dataset._label2id
             self._id2label = previous_dataset._id2label
-            if seq2seq:
+            if self._seq2seq:
                 self._label2id_sublabel = previous_dataset._label2id_sublabel
                 self._id2label_sublabel = previous_dataset._id2label_sublabel
         else:
             self._label2id = {key:value for key, value in CONTROL_LABELS_DICT.items()}
             self._id2label = [tag for tag in CONTROL_LABELS]
-            if seq2seq:
+            if self._seq2seq:
                 self._label2id_sublabel = {key:value for key, value in CONTROL_LABELS_DICT.items()}
                 self._id2label_sublabel = [tag for tag in CONTROL_LABELS]
 
@@ -186,7 +185,7 @@ class NameTag3Dataset:
                         self._label_ids[-1].append(self._label2id[label])
 
                         # TAG sub-labels for seq2seq decoding (nested NER).
-                        if seq2seq:
+                        if self._seq2seq:
                             for sublabel in label.split("|"):
                                 if sublabel not in self._label2id_sublabel:
                                     if train_dataset == None:
@@ -470,14 +469,14 @@ class NameTag3Dataset:
         # Parse the eval script output
         f1 = None
         if eval_script == "run_cnec2.0_eval_nested_corrected.sh":
-            with open("{}/{}.eval".format(logdir, dataset_type), "r", encoding="utf-8") as result_file:
+            with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
                 for line in result_file:
                     line = line.strip("\n")
                     if line.startswith("Type:"):
                         cols = line.split()
                         f1 = float(cols[5])
         elif eval_script == "run_conlleval.sh":
-            with open("{}/{}.eval".format(logdir, dataset_type), "r", encoding="utf-8") as result_file:
+            with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
                 for line in result_file:
                     line = line.strip("\n")
                     if line.startswith("accuracy:"):
