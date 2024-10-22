@@ -155,14 +155,14 @@ https://github.com/ufal/nametag3/blob/main/nametag3_client.py
 
 and hitting the download button ("Download raw file").
 
-Save your text in a plaintext file, see an example in `examples/cs_input.txt`.
+2. Save your text in a plaintext file, see an example in `examples/cs_input.txt`.
 At the command line, type the following command:
 
 ```sh
 ./nametag3_client.py examples/cs_input.txt
 ```
 
-The output will be printed to the standard output. To redirect the output
+3. The output will be printed to the standard output. To redirect the output
 into a file, you can type:
 
 ```sh
@@ -175,7 +175,7 @@ Or you can specify the output filename:
 ./nametag3_client.py examples/cs_input.txt --outfile=output_file.xml
 ```
 
-Additionally, you can specify the language of your data or the exact required
+4. Additionally, you can specify the language of your data or the exact required
 model for your data. The language options are `english`, `german`, `dutch`, `spanish`,
 `ukraininan`, and `czech` (lowercased):
 
