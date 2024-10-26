@@ -439,7 +439,7 @@ class MacroAverageDevF1(keras.callbacks.Callback):
         for i in range(len(self._dev_datasets)):
 
             # Predict the output and write to file
-            predictions_filename = "{}_{}_predictions{}.conll".format("dev", self._dev_datasets[i].corpus, "_{}".format(epoch+1) if epoch != None else "")
+            predictions_filename = "{}_{}_predictions.conll".format("dev", self._dev_datasets[i].corpus)
             predicted_output = "".join(self.model.predict("dev", self._dev_datasets[i], self._args))
             with open(os.path.join(self._args.logdir, predictions_filename), "w", encoding="utf-8") as predictions_file:
                 print(predicted_output, file=predictions_file, end="")
@@ -757,6 +757,9 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         of the output.
         """
 
+        if dataset.tagset_mask:
+            raise NotImplementedError("Multitagset learning not implemented for nested NEs")
+
         # For simplicity, seq2seq batch decoding is implemented for
         # --context_type=sentence only. The sentences are never concatenated to
         # create a larger context and are always processed one by one. The only
@@ -886,6 +889,11 @@ class NameTag3ModelClassification(NameTag3Model):
                         word_ids = word_ids.numpy(force=True)
 
                         predicted_logits = self.predict_on_batch(inputs)
+
+                        # Apply tagset mask to mask out invalid tags in multitagset learning.
+                        if dataset.tagset_mask:
+                            predicted_logits += dataset.tagset_mask
+
                         for i in range(len(predicted_logits)):
                             predicted_tag_ids.append(np.argmax(predicted_logits[i][word_ids[i] != nametag3_dataset.BATCH_PAD], axis=-1).tolist())
 

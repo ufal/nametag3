@@ -36,6 +36,31 @@ CONTROL_LABELS = ['<mask>', '<pad>', '<unk>', '<eow>', '<bos>']
 
 SHUFFLING_SHARD = 10000
 
+# Valid tagsets for multitagset learning.
+TAGSETS = {
+    "conll": ["B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "B-MISC", "I-MISC", "O"],
+    "uner": ["B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "O"],
+    "onto": ["O", "B-PERSON", "I-PERSON", "B-NORP", "I-NORP", "B-FAC", "I-FAC",
+             "B-ORG", "I-ORG", "B-GPE", "I-GPE", "B-LOC", "I-LOC", "B-PRODUCT",
+             "I-PRODUCT", "B-DATE", "I-DATE", "B-TIME", "I-TIME", "B-PERCENT",
+             "I-PERCENT", "B-MONEY", "I-MONEY", "B-QUANTITY", "I-QUANTITY",
+             "B-ORDINAL", "I-ORDINAL", "B-CARDINAL", "I-CARDINAL", "B-EVENT",
+             "I-EVENT", "B-WORK_OF_ART", "I-WORK_OF_ART", "B-LAW", "I-LAW",
+             "B-LANGUAGE", "I-LANGUAGE"]
+}
+
+# Official eval stripts for nested corpora.
+
+# CNEC 2.0 eval script is corrected in comparison to the original to not
+# fail on zero division in case of very bad system predictions after the
+# first few epochs of training.
+EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh"}
+
+# Datasets which have -DOCSTART- as document separator.
+HAS_DOCSTART = ["dutch-conll",
+                "english-conll",
+                "german-conll"]
+
 
 def pad_collate(batch):
     """Pads batches of sequences with varying dimensions."""
@@ -96,14 +121,12 @@ class NameTag3Dataset:
         self._args = args
         self._tokenizer = tokenizer
         self._tagset = tagset
+        self._training = train_dataset == None
 
         if self._tagset:
-            # Add a new token for tokenization to the tokenizer, if not added already.
-            self._tagset_token = "[{}]".format(tagset)
-            new_tokens = [self._tagset_token]
-            new_tokens = set(new_tokens) - set(tokenizer.vocab.keys())
-            tokenizer.add_tokens(list(new_tokens))
-            self._tagset_token_id = self._tokenizer.convert_tokens_to_ids(self._tagset_token)
+            self._tagset_token = "[TAGSET_{}]".format(tagset)
+            additional_special_token_index = self._tokenizer.additional_special_tokens.index(self._tagset_token)
+            self._tagset_token_id = self._tokenizer.additional_special_tokens_ids[additional_special_token_index]
 
         # Data structures
         self._forms = []
@@ -129,27 +152,13 @@ class NameTag3Dataset:
                 self._label2id_sublabel = {key:value for key, value in CONTROL_LABELS_DICT.items()}
                 self._id2label_sublabel = [tag for tag in CONTROL_LABELS]
 
-        # Official eval scripts
-        if self._seq2seq:
-            # Official eval stripts for nested corpora.
-
-            # CNEC 2.0 eval script is corrected in comparison to the original to not
-            # fail on zero division in case of very bad system predictions after the
-            # first few epochs of training.
-            self._EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh"}
-
-        else:
-            # Official eval stripts for flat corpora.
-            self._EVAL_SCRIPTS = {"english-conll": "run_conlleval.sh",
-                                  "german-conll": "run_conlleval.sh",
-                                  "spanish-conll": "run_conlleval.sh",
-                                  "dutch-conll": "run_conlleval.sh",
-                                  "czech-cnec2.0_conll": "run_conlleval.sh",
-                                  "ukrainian-languk_conll": "run_conlleval.sh"}
 
         # Load the sentences
         if filename:
-            print("Loading data from \"{}\"".format(filename), file=sys.stderr, flush=True)
+            print("Reading data {}{}from \"{}\"".format("of corpus \"{}\" ".format(self._corpus) if self._corpus else "",
+                                                        "with tagset \"{}\" ".format(self._tagset) if self._tagset else "",
+                                                        filename),
+                  file=sys.stderr, flush=True)
 
         start_time = time.time()
         with open(filename, "r", encoding="utf-8") if filename is not None else io.StringIO(text) as file:
@@ -197,7 +206,7 @@ class NameTag3Dataset:
                     in_sentence = False
 
                     # Stop reading training data if limit reached.
-                    if args.max_sentences_train and train_dataset == None and len(self._forms) >= args.max_sentences_train:
+                    if args.max_sentences_train and self._training and len(self._forms) >= args.max_sentences_train:
                         print("Reached required --max_sentences={}, stopped reading training data.".format(args.max_sentences_train), file=sys.stderr, flush=True)
                         break
 
@@ -209,7 +218,7 @@ class NameTag3Dataset:
         # Create dataloader if any data given.
         if filename or text:
             self._dataloader = self.create_torch_dataloader(args,
-                                                            shuffle=True if not train_dataset else False)
+                                                            shuffle=True if self._training else False)
 
     def _split_document(self, input_ids, word_ids, strings, outputs):
         """Reorganize to max_context window splits instead sentences."""
@@ -220,13 +229,12 @@ class NameTag3Dataset:
 
             # Empty splits OR cannot fit entire sentence in current split OR
             # new document found => make new split.
-            room_for_tagset_token = self._tagset != None    # 1 if self._tagset is used
+            room_for_tagset_token = self._tagset != None  # 1 if --tagsets is enabled
             if len(input_ids_splits) == 0 \
                     or len(input_ids_splits[-1]) + len(input_ids[s]) - 1 >= self._tokenizer.model_max_length - room_for_tagset_token \
-                    or (self._corpus and self._corpus in ["english-conll", "german-conll", "dutch-conll"] and strings[s][0] == "-DOCSTART-"):
+                    or (self._corpus and self._corpus in HAS_DOCSTART and strings[s][0] == "-DOCSTART-"):
                 if len(input_ids_splits):   # close previous split
                     input_ids_splits[-1].append(self._tokenizer.sep_token_id)
-                    assert len(input_ids_splits[-1]) <= self._tokenizer.model_max_length
 
                 # Start new split
                 input_ids_splits.append([self._tokenizer.cls_token_id])
@@ -247,7 +255,6 @@ class NameTag3Dataset:
         # Complete the last split with [SEP]
         if input_ids_splits and input_ids_splits[-1] and input_ids_splits[-1][-1] != self._tokenizer.sep_token_id:
             input_ids_splits[-1].append(self._tokenizer.sep_token_id)
-            assert len(input_ids_splits[-1]) < self._tokenizer.model_max_length
 
         return input_ids_splits, word_ids_splits, strings_splits, outputs_splits
 
@@ -383,12 +390,12 @@ class NameTag3Dataset:
 
             if context_type in ["max_context", "document"]:
                 if self._tagset:
-                    raise NotImplementedError("--tagset_token not implemented for --context_type=max_context and --context_type=document")
+                    raise NotImplementedError("--tagsets not implemented for --context_type=max_context and --context_type=document")
 
                 inputs_with_context = []
                 context = []
                 for s in range(len(input_ids)):   # sentences
-                    if context_type == "document" and self._corpus and self._corpus in ["english-conll", "german-conll", "dutch-conll"]:
+                    if context_type == "document" and self._corpus and self._corpus in HAS_DOCSTART:
                         if strings[s][0] == "-DOCSTART-":
                             context = []    # new document, drop context
 
@@ -406,13 +413,10 @@ class NameTag3Dataset:
                         start_sentence -= 1 # SEP not inserted, decrease start_sentence
 
                     inputs_with_context[-1].append(self._tokenizer.sep_token_id)
-                    assert len(inputs_with_context[-1]) <= self._tokenizer.model_max_length
 
                     # Update word_ids
                     for i in range(len(word_ids[s])):
                         word_ids[s][i] += start_sentence
-                        assert word_ids[s][i] >= 0
-                        assert word_ids[s][i] < self._tokenizer.model_max_length
 
                 input_ids = inputs_with_context
 
@@ -444,14 +448,13 @@ class NameTag3Dataset:
         return torch.utils.data.DataLoader(torch_dataset, collate_fn=pad_collate, batch_size=args.batch_size, shuffle=shuffle)
 
     def _eval_script(self):
-        if self._corpus in self._EVAL_SCRIPTS:
-            return self._EVAL_SCRIPTS[self._corpus]
+        if not self._seq2seq:
+            return "run_conlleval.sh"
+
+        if self._corpus in EVAL_SCRIPTS:
+            return EVAL_SCRIPTS[self._corpus]
         else:
-            if self._seq2seq:
-                raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given nested corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3Dataset._EVAL_SCRIPTS.")
-            else:
-                print("NameTag 3 does not have the official evaluation script for the given flat corpus, defaulting to the \"{}\" fallback for flat corpora".format(self._EVAL_SCRIPTS["english-conll"]), file=sys.stderr, flush=True)
-                return self._EVAL_SCRIPTS["english-conll"]
+            raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given nested corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3Dataset._EVAL_SCRIPTS.")
 
     def evaluate(self, dataset_type, predictions_filename, logdir):
         """Evaluate NEs in predictions_filename against the dataset's gold NEs.
@@ -485,3 +488,21 @@ class NameTag3Dataset:
             raise NotImplementedError("Parsing of the eval script \"{}\" output not implemented".format(eval_script))
 
         return f1
+
+    def create_tagset_mask(self, all_tags):
+        """Create tagset_mask for multitagset training."""
+
+        if self._tagset == None:
+            self.tagset_mask = None
+            return
+
+        if self._tagset not in TAGSETS:
+            raise ValueError("Unknown tagset value \"{}\" of NameTag3Dataset. Known tagset values are \"{}\"".format(self._tagset, ",".join(TAGSETS.keys())))
+
+        self.tagset_mask = [-1e9] * len(self.id2label())
+
+        # Mark positions with valid tags in this dataset.
+        for tag in TAGSETS[self._tagset] + CONTROL_LABELS:
+            if tag in all_tags:
+                index = all_tags.index(tag)
+                self.tagset_mask[index] = 0.

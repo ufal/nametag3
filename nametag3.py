@@ -123,12 +123,12 @@ if __name__ == "__main__":
     parser.add_argument("--postprocess", default=False, action="store_true", help="If enabled, performs a sanity check on the predicted test output to ensure entities are correctly nested and unique.")
     parser.add_argument("--prevent_all_dropouts", default=False, action="store_true", help="If True, sets --dropout=0., --transformer_hidden_dropout_probs=0. and --transformer_attention_probs_dropout_prob=0.")
     parser.add_argument("--remove_optimizer_from_checkpoint", default=False, action="store_true", help="If True, removes the optimizer from the loaded checkpoint and saves the checkpoint.")
-    parser.add_argument("--sampling", default="concatenate", choices=["proportional", "uniform", "concatenate", "temperature"], help="Sampling strategy for multilingual datasets.")
+    parser.add_argument("--sampling", default="concatenate", choices=["proportional", "uniform", "concatenate", "temperature", "temperature_logits", "temperature_probs"], help="Sampling strategy for multilingual datasets.")
     parser.add_argument("--save_best_checkpoint", default=False, action="store_true", help="Save best checkpoint on dev if set.")
     parser.add_argument("--seed", default=42, type=int, help="Random seed.")
     parser.add_argument("--subword_masking", default=0.0, type=float, help="Mask subwords with the given probability.")
     parser.add_argument("--steps_per_epoch", default=None, type=int, help="Steps per epoch. Default None (epoch iterates over all data).")
-    parser.add_argument("--tagsets", default=None, type=str, help="For multitagset training: tagsets corresponding to the given corpora, separated by comma.")
+    parser.add_argument("--tagsets", default=None, type=str, help="Specifies the tagsets corresponding to the given corpora for multitagset training, separated by commas. During training, each tagset is applied to its respective corpus. When used in prediction mode, the output will only include valid tags from the specified tagset(s).")
     parser.add_argument("--temperature", default=2.0, type=float, help="Value of temperature for temperature sampling.")
     parser.add_argument("--test_data", default=None, type=str, help="Test data.")
     parser.add_argument("--time", default=False, action="store_true", help="Measure prediction time.")
@@ -175,6 +175,8 @@ if __name__ == "__main__":
                                                 datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S"),
                                                 ",".join(("{}={}".format(re.sub("(.)[^_]*_?", r"\1", key), re.sub("^.*/", "", value) if type(value) == str else value)
                                                           for key, value in sorted(logargs.items())))))
+
+    print("Making logdir \"{}\"".format(args.logdir), file=sys.stderr, flush=True)
     os.makedirs(args.logdir, exist_ok=True)
 
     # Load the tokenizer

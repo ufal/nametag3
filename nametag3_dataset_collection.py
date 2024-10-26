@@ -51,7 +51,7 @@ class WeightedRandomSamplerFromDatasets(torch.utils.data.Sampler):
 
     def __iter__(self):
         dataset_choices = torch.multinomial(self._weights, len(self._dataset), replacement=True, generator=self._generator)
-        _, dataset_counts = torch.unique(dataset_choices, sorted=False, return_counts=True)
+        dataset_counts = torch.bincount(dataset_choices, minlength=len(dataset_choices))
 
         indices = []
         for i in range(len(self._weights)): # sample the required number from each dataset
@@ -77,6 +77,11 @@ class NameTag3DatasetCollection:
         self._datasets = []
         self._corpora = args.corpus.split(",") if args.corpus else None
         self._tagsets = args.tagsets.split(",") if hasattr(args, "tagsets") and args.tagsets else None
+
+        if self._tagsets:
+            special_tokens_dict = {}
+            special_tokens_dict["additional_special_tokens"] = ["[TAGSET_{}]".format(tagset) for tagset in set(self._tagsets)]
+            tokenizer.add_special_tokens(special_tokens_dict)
 
         if filenames:
             for i, filename in enumerate(filenames.split(",")):
@@ -105,6 +110,10 @@ class NameTag3DatasetCollection:
                                                             shuffle=True if not train_collection else False,
                                                             sampling=args.sampling if not train_collection else "concatenate")
             self._dataloaders = self.create_torch_dataloaders(args, shuffle=True if not train_collection else False)
+
+        # Create tagset masks in all datasets.
+        for dataset in self._datasets:
+            dataset.create_tagset_mask(self.id2label())
 
     def label2id(self):
         return self._datasets[-1].label2id()
@@ -135,14 +144,21 @@ class NameTag3DatasetCollection:
         elif sampling == "uniform":
             weights = [1/len(datasets)] * len(datasets)
 
-        elif sampling == "temperature":
+        elif sampling in ["temperature_logits", "temperature"]:
             weights = [len(torch_dataset) for torch_dataset in datasets]
             weights /= np.sum(weights)
             print("Original weights: ", weights, file=sys.stderr, flush=True)
 
             weights = [math.exp(weight/temperature) for weight in weights]
             weights /= np.sum(weights)
-            print("Weights with temperature", temperature, ": ", weights, file=sys.stderr, flush=True)
+
+        elif sampling == "temperature_probs":
+            weights = [len(torch_dataset) for torch_dataset in datasets]
+            weights /= np.sum(weights)
+            print("Original weights: ", weights, file=sys.stderr, flush=True)
+
+            weights **= 1/temperature
+            weights /= np.sum(weights)
 
         print("Sampling weights: {}".format(weights), file=sys.stderr, flush=True)
         return weights
