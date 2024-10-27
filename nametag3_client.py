@@ -65,11 +65,9 @@ commandlind-line arguments below.
 
 
 import argparse
-import email.mime.multipart
-import email.mime.nonmultipart
-import email.policy
 import json
 import os
+import random
 import sys
 import urllib.error
 import urllib.request
@@ -79,17 +77,20 @@ def perform_request(server, method, params={}):
     if not params:
         request_headers, request_data = {}, None
     else:
-        message = email.mime.multipart.MIMEMultipart("form-data", policy=email.policy.HTTP)
-
+        boundary = "{:x}".format(random.getrandbits(50 * 4))
+        request_headers = {"Content-Type": "multipart/form-data; boundary=\"{}\"".format(boundary)}
+        request_data = []
         for name, value in params.items():
-            payload = email.mime.nonmultipart.MIMENonMultipart("text", "plain")
-            payload.add_header("Content-Disposition", "form-data; name=\"{}\"".format(name))
-            payload.add_header("Content-Transfer-Encoding", "8bit")
-            payload.set_payload(value, charset="utf-8")
-            message.attach(payload)
-
-        request_data = message.as_bytes().replace(b"\r\n", b"\n").split(b"\n\n", maxsplit=1)[1]
-        request_headers = {"Content-Type": message["Content-Type"]}
+            request_data.extend([
+                "--" + boundary,
+                "Content-Disposition: form-data; name=\"{}\"".format(name),
+                "Content-Transfer-Encoding: 8bit",
+                "Content-Type: text/plain; charset=utf-8",
+                "",
+                value,
+            ])
+        request_data.extend(["--" + boundary + "--", ""])
+        request_data = "\r\n".join(request_data).encode("utf-8")
 
     try:
         with urllib.request.urlopen(urllib.request.Request(
@@ -156,7 +157,7 @@ if __name__ == "__main__":
         for input_path in (args.inputs or [sys.stdin]):
             # Use stdin if no inputs are specified
             if input_path != sys.stdin:
-                with open(input_path, "r", encoding="utf-8-sig") as input_file:
+                with open(input_path, "r", encoding="utf-8-sig", newline="") as input_file:
                     data = input_file.read()
             else:
                 data = sys.stdin.read()
