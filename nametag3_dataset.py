@@ -372,6 +372,46 @@ class NameTag3Dataset:
         return self._label2id_sublabel if self._seq2seq else self._label2id
 
     def _get_data_for_nn_dataset(self, context_type, keep_original_casing):
+        """Organizes the NameTag3Dataset data into NameTag3Model inputs and outputs.
+
+        Tokenizes the input tokens with the dataset's HF tokenizer into
+        subwords, and reorganizes the internal NameTag3Dataset data into inputs
+        and outputs for the NameTag3Model.
+
+        Sentences/documents exceeding the maximum number of subwords for the
+        model window (usually 512 subwords) are split between several windows
+        and concatenated again after prediction.
+
+        Arguments:
+            context_type: one of the following strings:
+                sentence: data organized in sentences, no context added to the
+                    predicted sentence,
+                max_context: data organized in sentences, maximum model window
+                    (usually 512 subwords) left context added before the
+                    predicted sentence,
+                document: data organized in sentences, maximum model window
+                    (usually 512 subwords) left context added before the
+                    predicted sentence, with splits on document boundaries
+                    (-DOCSTART-),
+                split_document: data organized in documents, the entire
+                    documents are predicted at once. Document boundaries are
+                    recognized by -DOCSTART-. If no -DOCSTART- is found in the
+                    data to split the documents, the prediction operates on a
+                    moving chunks of the maximum model window size (usually 512
+                    subwords).
+            keep_original_casing: Passed to NameTag3Dataset._tokenize(). By
+                default (False), a poor man's attempt at unifying the casing
+                before the tokenization is made. If enabled, the original token
+                casing is kept.
+
+        Returns:
+            input_ids: a 2D Python list of HF tokenized subword ids, sentence
+                or document organized,
+            word_ids: a 2D Python list of indices corresponding to first
+                subwords in input_ids to predict NE labels for,
+            outputs: a 2D Python list of gold NE labels, sentence or document
+                organized.
+        """
 
         # Tokenize and reorganize factors accordingly
         input_ids, word_ids, strings, outputs = self._tokenize(keep_original_casing=keep_original_casing)
