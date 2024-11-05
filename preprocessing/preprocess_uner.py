@@ -28,6 +28,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--add_docstarts", action="store_true", default=False, help="Adds -DOCSTART- on document start.")
     parser.add_argument("--language", required=True, default=None, type=str, help="Corpus language.")
     parser.add_argument("--source_corpus", required=True, default=None, type=str, help="Source corpus name.")
     parser.add_argument("--source_path", required=True, default=None, type=str, help="Path to the source corpus.")
@@ -58,6 +59,9 @@ if __name__ == "__main__":
                 with open(output_filename, "w", encoding="utf-8") as fw:
                     for l, line in enumerate(fr):
                         if line.startswith("#"):    # drop comments
+                            if line.startswith("# newdoc") and args.add_docstarts: # except marking new doc
+                                print("-DOCSTART-\tO", file=fw)
+                                print("", file=fw)
                             continue
                         line = line.rstrip()
                         if line:
