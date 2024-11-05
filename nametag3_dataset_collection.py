@@ -28,18 +28,32 @@ from nametag3_dataset import SHUFFLING_SHARD
 
 
 class WeightedRandomSamplerFromDatasets(torch.utils.data.Sampler):
-    """Weighted random sampler from multiple datasets.
+    """Custom weighted random sampler from multiple datasets.
 
-    Samples from original datasets comprising one large ConcatDataset according
-    to given weights without replacement.
+    Samples from the original datasets comprising one large ConcatDataset
+    according to the corresponding weights (probs).
     """
 
     def __init__(self, dataset, lens, weights, generator=None):
+        """Initializes the sampler before sampling.
+
+        Arguments:
+            dataset: torch.utils.data.ConcatDataset created by concatenating
+                the datasets (torch.utils.data.Dataset) to be sampled from,
+            lens: a Python list of ints representing the respective lengths of
+                the concatenated datasets,
+            weights: a Python list representing the respective sampling weights
+                of the concatenated datasets. The weights are expected to be
+                normalized, i.e., they are expected to be probabilities, really.
+                TODO: Rename the weights to probs?
+        """
+
         self._dataset = dataset
         self._lens = lens
         self._weights = torch.from_numpy(weights)
         self._generator = generator
 
+        # Get the original datasets' indices in the concatenated dataset.
         self._ranges = []
         start = 0
         for i in range(len(lens)):
@@ -50,18 +64,38 @@ class WeightedRandomSamplerFromDatasets(torch.utils.data.Sampler):
         return len(self._dataset)
 
     def __iter__(self):
+        """Samples as many examples as the concatenated datasets length sum."""
+
+        # At each position, decide the original dataset to be sampled from.
         dataset_choices = torch.multinomial(self._weights, len(self._dataset), replacement=True, generator=self._generator)
+
+        # Get the number of samples to be sampled from the original datasets.
         dataset_counts = torch.bincount(dataset_choices, minlength=len(dataset_choices))
 
+        # Sample the required number of examples from each dataset.
         indices = []
-        for i in range(len(self._weights)): # sample the required number from each dataset
+        for i in range(len(self._weights)): # for each dataset
             samples_required = dataset_counts[i]
+
+            # Repeat the sampling for the upsampled datasets, i.e., datasets
+            # that have less examples than required.
             while samples_required > 0:
+
+                # In one go, we can only sample as many examples as the dataset has.
                 samples_to_draw = min(samples_required, self._lens[i])
+
+                # Sample from the corresponding original dataset indices
+                # (self._ranges[i]) by taking as many samples as needed in this
+                # go from the permutation of indices.
                 indices.append(self._ranges[i][torch.randperm(self._lens[i], generator=self._generator)][:samples_to_draw])
+
+                # Number of samples remaining to be drawn.
                 samples_required -= samples_to_draw
+
+        # Flatten the sampled original datasets' indices from 2D to 1D.
         indices = torch.cat(indices)
 
+        # The second randperm mixes the original datasets' indices among each other.
         yield from indices[torch.randperm(len(indices), generator=self._generator)].tolist()
 
 
