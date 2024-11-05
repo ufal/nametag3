@@ -50,9 +50,12 @@ venv/bin/python3 nametag3.py \
 
 Input:
 
-The input data file format is a vertical file, one token and optionally, its label per line,
-separated by a tabulator; sentences delimited by newlines (such as a first and
-fourth column in a well-known CoNLL-2003 IOB shared task corpus):
+The input data file format is a vertical file, one token and its label(s) per
+line: labels separated by a '|', columns separated by a tabulator; sentences
+delimited by newlines (such as the first and the fourth column in the well-known
+CoNLL-2003 shared task). A line containing '-DOCSTART-' with the label 'O', as
+seen in the CoNLL-2003 shared task data, can be used to mark document
+boundaries. Input examples can be found in 'nametag3.py' and in 'examples'.
 
 John	B-PER
 loves	O
@@ -63,8 +66,6 @@ Mary	B-PER
 loves	O
 John	B-PER
 .	O
-
-More examples can be found in the examples directory.
 """
 
 

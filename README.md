@@ -238,8 +238,9 @@ venv/bin/python3 nametag3.py \
 The input data file format is a vertical file, one token and its label(s) per
 line: labels separated by a `|`, columns separated by a tabulator; sentences
 delimited by newlines (such as the first and the fourth column in the well-known
-CoNLL-2003 shared task). Input examples can be found in `nametag3.py` and in
-`examples`.
+CoNLL-2003 shared task). A line containing `-DOCSTART-` with the label `O`, as
+seen in the CoNLL-2003 shared task data, can be used to mark document
+boundaries. Input examples can be found in `nametag3.py` and in `examples`.
 
 
 ## Training NameTag 3
@@ -251,8 +252,9 @@ corpus. It will do so when provided the parameters `--train_data`. Optionally,
 The input data file format is a vertical file, one token and its label(s) per
 line: labels separated by a `|`, columns separated by a tabulator; sentences
 delimited by newlines (such as the first and the fourth column in the well-known
-CoNLL-2003 shared task). Input examples can be found in `nametag3.py` and in
-`examples`.
+CoNLL-2003 shared task). A line containing `-DOCSTART-` with the label `O`, as
+seen in the CoNLL-2003 shared task data, can be used to mark document
+boundaries. Input examples can be found in `nametag3.py` and in `examples`.
 
 Example usage of multilingual traning for flat NER with a softmax classification
 head:
