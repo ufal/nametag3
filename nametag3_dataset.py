@@ -56,11 +56,6 @@ TAGSETS = {
 # first few epochs of training.
 EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh"}
 
-# Datasets which have -DOCSTART- as document separator.
-HAS_DOCSTART = ["dutch-conll",
-                "english-conll",
-                "german-conll"]
-
 
 def pad_collate(batch):
     """Pads batches of sequences with varying dimensions."""
@@ -232,7 +227,7 @@ class NameTag3Dataset:
             room_for_tagset_token = self._tagset != None  # 1 if --tagsets is enabled
             if len(input_ids_splits) == 0 \
                     or len(input_ids_splits[-1]) + len(input_ids[s]) - 1 >= self._tokenizer.model_max_length - room_for_tagset_token \
-                    or (self._corpus and self._corpus in HAS_DOCSTART and strings[s][0] == "-DOCSTART-"):
+                    or strings[s][0] == "-DOCSTART-":
                 if len(input_ids_splits):   # close previous split
                     input_ids_splits[-1].append(self._tokenizer.sep_token_id)
 
@@ -395,9 +390,8 @@ class NameTag3Dataset:
                 inputs_with_context = []
                 context = []
                 for s in range(len(input_ids)):   # sentences
-                    if context_type == "document" and self._corpus and self._corpus in HAS_DOCSTART:
-                        if strings[s][0] == "-DOCSTART-":
-                            context = []    # new document, drop context
+                    if context_type == "document" and strings[s][0] == "-DOCSTART-":
+                        context = []    # new document, drop context
 
                     context.extend(input_ids[s][1:-1])  # append sentence without [CLS] and [SEP] to context
                     context = context[-self._tokenizer.model_max_length+3:]  # take last context, leave space for [CLS], [SEP] and [SEP]
