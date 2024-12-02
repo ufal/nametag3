@@ -635,7 +635,7 @@ class NameTag3Model(keras.Model):
             callbacks.append(self._model_checkpoint)
 
         super().fit(train_collection.dataloader,
-                    validation_data=dev_collection.dataloader,
+                    validation_data=dev_collection.dataloader if dev_collection else None,
                     epochs=epochs,
                     verbose=2,
                     steps_per_epoch=self._args.steps_per_epoch,
