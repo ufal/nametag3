@@ -263,9 +263,9 @@ head:
 venv/bin/python3 nametag3.py \
   --batch_size=8 \
   --context_type="split_document" \
-  --corpus="english-conll,german-conll,spanish-conll,dutch-conll,czech-cnec2.0_conll,ukrainian-languk_conll" \
+  --corpus="english-CoNLL2003-conll,german-CoNLL2003-conll,spanish-CoNLL2002-conll,dutch-CoNLL2002-conll,czech-cnec2.0-conll,ukrainian-languk-conll" \
   --decoding="classification" \
-  --dev_data=data/english-conll/dev.conll,data/german-conll/dev.conll,data/spanish-conll/dev.conll,data/dutch-conll/dev.conll,data/czech-cnec2.0_conll/dev.conll,data/ukrainian-languk_conll/dev.conll \
+  --dev_data=data/english-CoNLL2003-conll/dev.conll,data/german-CoNLL2003-conll/dev.conll,data/spanish-CoNLL2002-conll/dev.conll,data/dutch-CoNLL2002-conll/dev.conll,data/czech-cnec2.0-conll/dev.conll,data/ukrainian-languk-conll/dev.conll \
   --dropout=0.5 \
   --epochs=20 \
   --evaluate_test_data \
@@ -275,9 +275,9 @@ venv/bin/python3 nametag3.py \
   --name="multilingual" \
   --sampling="temperature" \
   --save_best_checkpoint \
-  --test_data=data/english-conll/test.conll,data/german-conll/test.conll,data/spanish-conll/test.conll,data/dutch-conll/test.conll,data/czech-cnec2.0_conll/test.conll,data/ukrainian-languk_conll/test.conll \
+  --test_data=data/english-CoNLL2003-conll/test.conll,data/german-CoNLL2003-conll/test.conll,data/spanish-CoNLL2002-conll/test.conll,data/dutch-CoNLL2002-conll/test.conll,data/czech-cnec2.0-conll/test.conll,data/ukrainian-languk-conll/test.conll \
   --threads=4 \
-  --train_data=data/english-conll/train.conll,data/german-conll/train.conll,data/spanish-conll/train.conll,data/dutch-conll/train.conll,data/czech-cnec2.0_conll/train.conll,data/ukrainian-languk_conll/train.conll \
+  --train_data=data/english-CoNLL2003-conll/train.conll,data/german-CoNLL2003-conll/train.conll,data/spanish-CoNLL2002-conll/train.conll,data/dutch-CoNLL2002-conll/train.conll,data/czech-cnec2.0-conll/train.conll,data/ukrainian-languk-conll/train.conll \
   --warmup_epochs=1
 ```
 
@@ -299,13 +299,13 @@ A single instance of a trained model physically stored on a disc can be listed
 under several variants, just like in the following example, in which one model
 (`models/nametag3-multilingual-conll-240830/`) is served as
 a `nametag3-multilingual-conll-240830` model and also as
-a `nametag3-english-conll-240830` model. The first model is also known as
+a `nametag3-english-CoNLL2003-conll-240830` model. The first model is also known as
 `multilingual-conll`, and the second one which is also named `eng` and `en`:
 
 ```sh
 venv/bin/python3 nametag3_server.py 8001 multilingual-conll \
   nametag3-multilingual-conll-240830:multilingual-conll models/nametag3-multilingual-conll-240830/ multilingual_acknowledgements \
-  nametag3-english-conll-240830:eng:en models/nametag3-multilingual-conll-240830/ english_acknowledgements \
+  nametag3-english-CoNLL2003-conll-240830:eng:en models/nametag3-multilingual-conll-240830/ english_acknowledgements \
 ```
 
 Example server usage with three monolingual models:
@@ -313,8 +313,8 @@ Example server usage with three monolingual models:
 ```sh
 venv/bin/python3 nametag3_server.py 8001 cs \
     czech-cnec2.0-240830:cs:ces models/nametag3-czech-cnec2.0-240830/ czech-cnec2_acknowledgements \
-    english-conll-240830:en:eng models/nametag3-english-conll-240830/ english-conll_acknowledgements \
-    spanish-conll-240830:es:spa models/nametag3-spanish-conll-240830/ spanish-conll_acknowledgements
+    english-CoNLL2003-conll-240830:en:eng models/nametag3-english-CoNLL2003-conll-240830/ english-CoNLL2003-conll_acknowledgements \
+    spanish-CoNLL2002-conll-240830:es:spa models/nametag3-spanish-CoNLL2002-conll-240830/ spanish-CoNLL2002-conll_acknowledgements
 ```
 
 
