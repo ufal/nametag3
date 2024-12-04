@@ -41,6 +41,21 @@ import transformers
 import nametag3_dataset
 
 
+##############################
+### NameTag3 Model Factory ###
+##############################
+
+def nametag3_model_factory(decoding="classification"):
+    """Returns either the flat or nested NameTag3 Model."""
+
+    if decoding == "classification":
+        return NameTag3ModelClassification
+    elif decoding == "seq2seq":
+        return NameTag3ModelSeq2seq
+    else:
+        raise ValueError("Unknown decoding \"{}\"".format(args.decoding))
+
+
 ########################################
 ### Helper classes for NameTag3Model ###
 ########################################

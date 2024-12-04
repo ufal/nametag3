@@ -76,7 +76,7 @@ os.environ.setdefault("KERAS_BACKEND", "torch")
 import transformers
 
 from nametag3_dataset_collection import NameTag3DatasetCollection
-from nametag3_model import NameTag3ModelClassification, NameTag3ModelSeq2seq
+from nametag3_model import nametag3_model_factory
 import ufal.udpipe
 
 
@@ -155,13 +155,10 @@ class Models:
                                                                            add_prefix_space = self._args.hf_plm in ["roberta-base", "roberta-large", "ufal/robeczech-base"])
 
             # Construct the network
-            if self._args.decoding == "classification":
-                self.model = NameTag3ModelClassification(len(self._train_collection.label2id().keys()), self._args, self._train_collection.id2label(), self.hf_tokenizer)
-            elif self._args.decoding == "seq2seq":
-                self.model = NameTag3ModelSeq2seq(len(self._train_collection.label2id().keys()), self._args, self._train_collection.id2label(), self.hf_tokenizer)
-            else:
-                # TODO: do something
-                pass
+            self.model = nametag3_model_factory(self._args.decoding)(len(self._train_collection.label2id().keys()),
+                                                                     self._args,
+                                                                     self._train_collection.id2label(),
+                                                                     self.hf_tokenizer)
 
             # Load the checkpoint
             self.model.load_checkpoint(os.path.join(path, self._args.checkpoint_filename))

@@ -90,7 +90,7 @@ import torch
 import transformers
 
 from nametag3_dataset_collection import NameTag3DatasetCollection
-from nametag3_model import NameTag3ModelClassification, NameTag3ModelSeq2seq
+from nametag3_model import nametag3_model_factory
 
 
 if __name__ == "__main__":
@@ -204,16 +204,10 @@ if __name__ == "__main__":
         test_collection = NameTag3DatasetCollection(args, tokenizer=tokenizer, filenames=args.test_data, train_collection=train_collection if args.train_data else train_loaded)
 
     # Construct the model
-    if args.decoding == "classification":
-        model = NameTag3ModelClassification(len(train_collection.label2id().keys()) if train_collection else len(train_loaded.label2id().keys()),
-                                            args,
-                                            train_collection.id2label() if train_collection else train_loaded.id2label(),
-                                            tokenizer)
-    elif args.decoding == "seq2seq":
-        model = NameTag3ModelSeq2seq(len(train_collection.label2id().keys()) if train_collection else len(train_loaded.label2id().keys()),
-                                     args,
-                                     train_collection.id2label() if train_collection else train_loaded.id2label(),
-                                     tokenizer)
+    model = nametag3_model_factory(args.decoding)(len(train_collection.label2id().keys()) if train_collection else len(train_loaded.label2id().keys()),
+                                                  args,
+                                                  train_collection.id2label() if train_collection else train_loaded.id2label(),
+                                                  tokenizer)
 
     # Pretrain with frozen transformer
     if args.train_data and args.epochs_frozen:
