@@ -581,24 +581,43 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                         token_list[-1].append(model._udpipe_tokenizer.Token(token.form, token.getSpacesBefore(), token.getSpacesAfter()))
                     input_tokens.append("")
 
-
-                # Create NameTag3Collection with only one NameTag3Dataset.
-                test_collection = NameTag3DatasetCollection(model.args,
-                                                            tokenizer=model.hf_tokenizer,
-                                                            text="\n".join(input_tokens),
-                                                            train_collection=model._train_collection)
-
-                # Predict and convert to the requested output format.
+                # Generate responses in batches.
                 started_responding = False
-                n_tokens_in_batches, n_nes_in_batches, n_sentences_in_batches = 0, 1, 0
                 try:
 
                     # Handle empty requests separately by generating empty output with valid format and headers.
                     if len(input_tokens) == 0:
                         request.start_responding(url, output_param, model, infclen)
 
-                    # Handle non-empty requests by running the neural network.
-                    else:
+                    # Tokenize without calling the NameTag 3 model.
+                    elif url.path == "/tokenize":
+                        for i in range(0, len(token_list), model.args.batch_size):
+                            batch_output = []
+                            for sentence in token_list[i:i+model.args.batch_size]:
+                                batch_output.append("\n".join([token.token for token in sentence] + [""]))
+                            batch_output = "\n".join(batch_output + [""])
+
+                            if not started_responding:
+                                # The first batch is ready, we commit to generate batch_output.
+                                request.start_responding(url, output_param, model, infclen)
+                                started_responding=True
+
+                                if url.path.startswith("/weblicht"):
+                                    request.wfile.write(batch_output.encode("utf-8"))
+                                else:
+                                    request.wfile.write(json.dumps(batch_output, ensure_ascii=False)[1:-1].encode("utf-8"))
+
+                    # Recognize NEs by calling the NameTag 3 model.
+                    elif url.path == "/recognize" or url.path == "/weblicht/recognize":
+
+                        # Create NameTag3Collection with only one NameTag3Dataset.
+                        test_collection = NameTag3DatasetCollection(model.args,
+                                                                    tokenizer=model.hf_tokenizer,
+                                                                    text="\n".join(input_tokens),
+                                                                    train_collection=model._train_collection)
+
+                        # Call the NameTag 3 model.
+                        n_tokens_in_batches, n_nes_in_batches, n_sentences_in_batches = 0, 1, 0
                         for batch_output in model.yield_predicted_batches(test_collection.datasets[-1]):
 
                             # Sentences and tokens processed in this batch
@@ -609,24 +628,23 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                             # Finalize the batch output string by joining the sentence strings.
                             batch_output = "".join(batch_output)
 
-                            if url.path == "/recognize" or url.path == "/weblicht/recognize":
-                                batch_output = model.postprocess(batch_output)
-                                if output_param == "vertical":
-                                    batch_output, n_tokens_in_batches = model.conll_to_vertical(batch_output, n_tokens_in_batches)
-                                if output_param == "conllu-ne":
-                                    batch_output, n_nes_in_batches = model.conll_to_conllu(batch_output, batch_sentences, "conllu-ne", n_nes_in_batches)
-                                if output_param == "xml":
-                                    batch_output = model.conll_to_xml(batch_output, batch_udpipe_tokens)
+                            batch_output = model.postprocess(batch_output)
+                            if output_param == "vertical":
+                                batch_output, n_tokens_in_batches = model.conll_to_vertical(batch_output, n_tokens_in_batches)
+                            if output_param == "conllu-ne":
+                                batch_output, n_nes_in_batches = model.conll_to_conllu(batch_output, batch_sentences, "conllu-ne", n_nes_in_batches)
+                            if output_param == "xml":
+                                batch_output = model.conll_to_xml(batch_output, batch_udpipe_tokens)
 
-                                if not started_responding:
-                                    # The first batch is ready, we commit to generate batch_output.
-                                    request.start_responding(url, output_param, model, infclen)
-                                    started_responding=True
+                            if not started_responding:
+                                # The first batch is ready, we commit to generate batch_output.
+                                request.start_responding(url, output_param, model, infclen)
+                                started_responding=True
 
-                                if url.path.startswith("/weblicht"):
-                                    request.wfile.write(batch_output.encode("utf-8"))
-                                else:
-                                    request.wfile.write(json.dumps(batch_output, ensure_ascii=False)[1:-1].encode("utf-8"))
+                            if url.path.startswith("/weblicht"):
+                                request.wfile.write(batch_output.encode("utf-8"))
+                            else:
+                                request.wfile.write(json.dumps(batch_output, ensure_ascii=False)[1:-1].encode("utf-8"))
 
                     if not url.path.startswith("/weblicht"):
                         request.wfile.write(b'"\n}\n')
