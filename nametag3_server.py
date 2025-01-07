@@ -597,15 +597,15 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                                 batch_output.append("\n".join([token.token for token in sentence] + [""]))
                             batch_output = "\n".join(batch_output + [""])
 
+                            if output_param == "xml":
+                                batch_output = model.conll_to_xml(batch_output, token_list[i:i+model.args.batch_size])
+
                             if not started_responding:
                                 # The first batch is ready, we commit to generate batch_output.
                                 request.start_responding(url, output_param, model, infclen)
                                 started_responding=True
 
-                                if url.path.startswith("/weblicht"):
-                                    request.wfile.write(batch_output.encode("utf-8"))
-                                else:
-                                    request.wfile.write(json.dumps(batch_output, ensure_ascii=False)[1:-1].encode("utf-8"))
+                            request.wfile.write(json.dumps(batch_output, ensure_ascii=False)[1:-1].encode("utf-8"))
 
                     # Recognize NEs by calling the NameTag 3 model.
                     elif url.path == "/recognize" or url.path == "/weblicht/recognize":
