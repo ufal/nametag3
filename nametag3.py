@@ -171,10 +171,14 @@ if __name__ == "__main__":
                 "warmup_epochs_frozen"]:
         del logargs[key]
 
+    # Include unique Slurm job id if running in Slurm-managed environment.
+    slurm_job_id = os.getenv("SLURM_JOB_ID")
+
     args.logdir = os.path.join(args.logdir,
-                               "{}-{}-{}".format(os.path.basename(__file__),
-                                                datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S"),
-                                                ",".join(("{}={}".format(re.sub("(.)[^_]*_?", r"\1", key), re.sub("^.*/", "", value) if type(value) == str else value)
+                               "{}-{}{}-{}".format(os.path.basename(__file__),
+                                                   slurm_job_id + "-" if slurm_job_id else "",
+                                                   datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S"),
+                                                   ",".join(("{}={}".format(re.sub("(.)[^_]*_?", r"\1", key), re.sub("^.*/", "", value) if type(value) == str else value)
                                                           for key, value in sorted(logargs.items())))))
 
     print("Making logdir \"{}\"".format(args.logdir), file=sys.stderr, flush=True)
