@@ -73,6 +73,7 @@ import urllib.parse
 
 os.environ.setdefault("KERAS_BACKEND", "torch")
 
+import torch
 import transformers
 
 from nametag3_dataset_collection import NameTag3DatasetCollection
@@ -703,6 +704,10 @@ if __name__ == "__main__":
     parser.add_argument("--max_request_size", default=4096*1024, type=int, help="Maximum request size")
     parser.add_argument("--threads", default=4, type=int, help="Threads to use")
     args = parser.parse_args()
+
+    # Set threads
+    torch.set_num_threads(args.threads)
+    torch.set_num_interop_threads(args.threads)
 
     # Log stderr to logfile if given
     if args.logfile is not None:
