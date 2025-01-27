@@ -151,6 +151,7 @@ if __name__ == "__main__":
     # Set threads and random seed
     torch.set_num_threads(args.threads)
     torch.set_num_interop_threads(args.threads)
+    torch.backends.cuda.matmul.allow_tf32 = True    # faster, and less memory
 
     keras.utils.set_random_seed(args.seed)
     keras.config.disable_traceback_filtering()

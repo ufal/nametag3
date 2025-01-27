@@ -708,6 +708,7 @@ if __name__ == "__main__":
     # Set threads
     torch.set_num_threads(args.threads)
     torch.set_num_interop_threads(args.threads)
+    torch.backends.cuda.matmul.allow_tf32 = True    # faster, and less memory
 
     # Log stderr to logfile if given
     if args.logfile is not None:
