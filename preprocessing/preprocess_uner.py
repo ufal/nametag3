@@ -42,9 +42,9 @@ if __name__ == "__main__":
 
     if args.language == "maghrebi_arabic_french":
         langcode = "qaf"
-    elif args.language == "norwegian-bokmaal":
+    elif args.language == "norwegian_bokmaal":
         langcode = "nob"
-    elif args.language == "norwegian-nynorsk":
+    elif args.language == "norwegian_nynorsk":
         langcode = "nno"
     else:
         langcode = langcodes.find(args.language)
@@ -68,11 +68,17 @@ if __name__ == "__main__":
                             cols = line.split(UNER_COLSEP)
                             if len(cols) != UNER_NCOLS:
                                 raise ValueError("Expected {} columns, got {} on line {}: \"{}\"".format(UNER_NCOLS, len(cols), l, line))
+
                             # Drop OTH, as it is annotated inconsistently and
                             # not part of the official annotation
                             # (https://aclanthology.org/2024.naacl-long.243/)
                             if cols[2].endswith("OTH"):
                                 cols[2] = "O"
+
+                            # Drop "-" in norwegian
+                            if cols[2] == "-":
+                                cols[2] = "O"
+
                             print("{}\t{}".format(cols[1], cols[2]), file=fw)
                         else:
                             print("", file=fw)
