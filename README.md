@@ -5,8 +5,8 @@ recognition (NER). NameTag 3 identifies proper names in text and classifies them
 into a set of predefined categories, such as names of persons, locations,
 organizations, etc.
 
-NameTag 3 offers state-of-the-art or near state-of-the-art performance in
-English, German, Spanish, Dutch, Czech and Ukrainian.
+NameTag 3 offers state-of-the-art or near state-of-the-art performance in 17
+languages, including English, German, Czech, and Ukrainian.
 
 NameTag 3 is a free software under [Mozilla Public License 2.0](htts://www.mozilla.org/MPL/2.0/), and the linguistic models are free for non-commercial use and distributed under [CC BY-NC-SA license](https://creativecommons.org/licenses/by-nc-sa/3.0/), although for some models the original data used to create the
 model may impose additional licensing conditions. NameTag is versioned using [Semantic Versioning](https://semver.org./).
@@ -290,31 +290,64 @@ The mandatory arguments are given in this order:
 
 - port
 - default model name
-- each following triple of arguments defines a model, of which
-  - first argument is the model name
-  - second argument is the model directory
-  - third argument are the acknowledgements to append
+- each following quadruple of arguments defines a model, of which
+    - the first argument is the model name,
+    - the second argument is the model directory,
+    - the third argument is the tagset of the model or empty string for models
+        trained without tagsets,
+    - the fourth argument are the acknowledgements to append.
 
-A single instance of a trained model physically stored on a disc can be listed
-under several variants, just like in the following example, in which one model
-(`models/nametag3-multilingual-conll-240830/`) is served as
-a `nametag3-multilingual-conll-240830` model and also as
-a `nametag3-english-CoNLL2003-conll-240830` model. The first model is also known as
-`multilingual-conll`, and the second one which is also named `eng` and `en`:
+If the model has been trained as a multitagset one, a single instance of such
+trained model can be used with several tagset variants, just like in the
+following example, in which one model (`models/nametag3-multilingual-250203/`)
+is served as a `nametag3-multilingual-conll-250203` model, then as
+a `nametag3-multilingual-uner-250203` model, and finally, also as
+a `nametag3-multilingual-onto-250203` model.
+
+Furthermore, the model name in the first argument can be extended with aliases,
+delimited by commas. In the following example, the Czech model
+`nametag3-czech-cnec2.0-240830` is also served as `czech` and `cs`.
+
+### Example Usage
+
+In the following example, the server is loading two models, a Czech one, and
+a multilingual one, which is also served with three different tagsets:
 
 ```sh
-venv/bin/python3 nametag3_server.py 8001 multilingual-conll \
-  nametag3-multilingual-conll-240830:multilingual-conll models/nametag3-multilingual-conll-240830/ multilingual_acknowledgements \
-  nametag3-english-CoNLL2003-conll-240830:eng:en models/nametag3-multilingual-conll-240830/ english_acknowledgements \
+venv/bin/python3 ./nametag3\_server.py 8001 nametag3-czech-cnec2.0-240830 \
+  nametag3-czech-cnec2.0-240830:czech:cs models/nametag3-czech-cnec2.0-240830/ "" "czech-ack" \
+  nametag3-multilingual-conll-250203 models/nametag3-multilingual-250203/ "conll" "multilingual-conll-250203-ack" \
+  nametag3-multilingual-uner-250203 models/nametag3-multilingual-250203/ "uner" "multilingual-uner-250203-ack" \
+  nametag3-multilingual-onto-250203 models/nametag3-multilingual-250203/ "onto" "multilingual-onto-250203-ack"
 ```
 
-Example server usage with three monolingual models:
+Example server usage with three monolingual models with name aliases, and the
+models do not use specific tagsets (see the empty strings in their
+corresponding third arguments):
 
 ```sh
-venv/bin/python3 nametag3_server.py 8001 cs \
-    czech-cnec2.0-240830:cs:ces models/nametag3-czech-cnec2.0-240830/ czech-cnec2_acknowledgements \
-    english-CoNLL2003-conll-240830:en:eng models/nametag3-english-CoNLL2003-conll-240830/ english-CoNLL2003-conll_acknowledgements \
-    spanish-CoNLL2002-conll-240830:es:spa models/nametag3-spanish-CoNLL2002-conll-240830/ spanish-CoNLL2002-conll_acknowledgements
+venv/bin/python3 nametag3\_server.py 8001 czech-cnec2.0-240830 \
+  czech-cnec2.0-240830:cs:ces models/nametag3-czech-cnec2.0-240830/ "" czech-cnec2_acknowledgements \
+  english-CoNLL2003-conll-240830:en:eng models/nametag3-english-CoNLL2003-conll-240830/ "" english-CoNLL2003-conll_acknowledgements \
+  spanish-CoNLL2002-conll-240830:es:spa models/nametag3-spanish-CoNLL2002-conll-240830/ "" spanish-CoNLL2002-conll_acknowledgements
+```
+
+### Sending requests to the NameTag 3 server
+
+Example commandline call with curl:
+
+```
+curl -F data=@examples/cs_input.conll -F input="vertical" -F output="conll" localhost:8001/recognize | jq -j .result
+```
+
+Expected commandline output:
+
+```
+Jmenuji	O
+se	O
+Jan	B-P|B-pf
+Novák	I-P|B-ps
+.	O
 ```
 
 

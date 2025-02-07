@@ -16,35 +16,51 @@ The mandatory arguments are given in this order:
 
 - port
 - default model name
-- each following triple of arguments defines a model, of which
-    - first argument is the model name
-    - second argument is the model directory
-    - third argument are the acknowledgements to append
+- each following quadruple of arguments defines a model, of which
+    - the first argument is the model name,
+    - the second argument is the model directory,
+    - the third argument is the tagset of the model or empty string for models
+        trained without tagsets,
+    - the fourth argument are the acknowledgements to append.
 
-A single instance of a trained model physically stored on a disc can be listed
-under several variants, just like in the following example, in which one model
-(models/nametag3-multilingual-conll-240830/) is served as
-a nametag3-multilingual-conll-240830 model and also as
-a nametag3-english-CoNLL2003-conll-240830 model. The first model is also known as
-multilingual-conll, and the second one is also named eng and en:
+If the model has been trained as a multitagset one, a single instance of such
+trained model can be used with several tagset variants, just like in the
+following example, in which one model ("models/nametag3-multilingual-250203/")
+is served as a "nametag3-multilingual-conll-250203" model, then as
+a "nametag3-multilingual-uner-250203" model, and finally, also as
+a "nametag3-multilingual-onto-250203" model.
 
-$ venv/bin/python3 nametag3_server.py 8001 models/nametag3-multilingual-conll-240830/ \
-  nametag3-multilingual-conll-240830/ models/nametag3-multilingual-conll-240830/ multilingual_acknowledgements \
-  nametag3-english-CoNLL2003-conll-240830:eng:en models/nametag3-multilingual-conll-240830/ english_acknowledgements \
+Furthermore, the model name in the first argument can be extended with aliases,
+delimited by commas. In the following example, the Czech model
+"nametag3-czech-cnec2.0-240830" is also served as "czech" and "cs".
 
-Example server usage with three monolingual models:
+Example Usage
+-------------
 
-$ venv/bin/python3 nametag3_server.py 8001 cs \
-    czech-cnec2.0-240830:cs:ces models/nametag3-czech-cnec2.0-240830/ czech-cnec2_acknowledgements \
-    english-CoNLL2003-conll-240830:en:eng models/nametag3-english-CoNLL2003-conll-240830/ english-CoNLL2003-conll_acknowledgements \
-    spanish-CoNLL2002-conll-240830:es:spa models/nametag3-spanish-CoNLL2002-conll-240830/ spanish-CoNLL2002-conll_acknowledgements
+In the following example, the server is loading two models, a Czech one, and
+a multilingual one, which is also served with three different tagsets:
+
+venv/bin/python3 ./nametag3_server.py 8001 nametag3-czech-cnec2.0-240830 \
+    nametag3-czech-cnec2.0-240830:czech:cs models/nametag3-czech-cnec2.0-240830/ "" "czech-ack" \
+    nametag3-multilingual-conll-250203 models/nametag3-multilingual-250203/ "conll" "multilingual-conll-250203-ack" \
+    nametag3-multilingual-uner-250203 models/nametag3-multilingual-250203/ "uner" "multilingual-uner-250203-ack" \
+    nametag3-multilingual-onto-250203 models/nametag3-multilingual-250203/ "onto" "multilingual-onto-250203-ack"
+
+Example server usage with three monolingual models with name aliases, and the
+models do not use specific tagsets (see the empty strings in their
+corresponding third arguments):
+
+$ venv/bin/python3 nametag3_server.py 8001 czech-cnec2.0-240830 \
+    czech-cnec2.0-240830:cs:ces models/nametag3-czech-cnec2.0-240830/ "" czech-cnec2_acknowledgements \
+    english-CoNLL2003-conll-240830:en:eng models/nametag3-english-CoNLL2003-conll-240830/ "" english-CoNLL2003-conll_acknowledgements \
+    spanish-CoNLL2002-conll-240830:es:spa models/nametag3-spanish-CoNLL2002-conll-240830/ "" spanish-CoNLL2002-conll_acknowledgements
 
 Sending requests to the NameTag 3 server
 ----------------------------------------
 
 Example commandline call with curl:
 
-$ curl -F data=@examples/cs_input.conll -F input="vertical" -F output="conll" localhost:8001/recognize| jq -j .result
+$ curl -F data=@examples/cs_input.conll -F input="vertical" -F output="conll" localhost:8001/recognize | jq -j .result
 
 Expected commandline output:
 
@@ -123,11 +139,10 @@ class Models:
     """Initializes NameTag 3 models, UDPipe tokenizers and HF tokenizers."""
 
     class Model:
-        """Initializes NameTag 3 model.
+        """Initializes a NameTag 3 model.
 
-        Initializes the NameTag3 model, along with the respective id2label and
-        label2id mappings, the UDPipe tokenizer and the HF tokenizer. The model
-        is not leaded to memory until before the first request.
+        Initializes a NameTag3 model, along with the respective id2label and
+        label2id mappings, the UDPipe tokenizer and the HF tokenizer.
         """
 
         def __init__(self, path, name, acknowledgements, server_args):
@@ -144,16 +159,18 @@ class Models:
 
             self._args.batch_size = self._server_args.batch_size
 
-            print("self._args: ", self._args, file=sys.stderr, flush=True)
-
-            # Unpickle word mappings of train data
-            self._train_collection = NameTag3DatasetCollection(self._args)
-            with open("{}/mappings.pickle".format(path), mode="rb") as mappings_file:
-                self._train_collection.load_collection_mappings(path)
+            print("Model options loaded successfully:\n{}".format(self._args), file=sys.stderr, flush=True)
 
             # Load the HF tokenizer
             self.hf_tokenizer = transformers.AutoTokenizer.from_pretrained(self._args.hf_plm,
                                                                            add_prefix_space = self._args.hf_plm in ["roberta-base", "roberta-large", "ufal/robeczech-base"])
+
+            # Unpickle word mappings of train data
+            self._train_collection = NameTag3DatasetCollection(self._args,
+                                                               self.hf_tokenizer,
+                                                               tagsets=self._args.tagsets if hasattr(self._args, "tagsets") and self._args.tagsets else None)
+            with open("{}/mappings.pickle".format(path), mode="rb") as mappings_file:
+                self._train_collection.load_collection_mappings(path)
 
             # Construct the network
             self.model = nametag3_model_factory(self._args.decoding)(len(self._train_collection.label2id().keys()),
@@ -409,9 +426,10 @@ class Models:
         self.models_by_names = {}   # model names and language variants
         self.models_by_paths = {}   # paths to initialized models
         self.important_names_list = []    # important names to list
+        self.tagsets_by_names = {}  # model name to tagset
 
-        for i in range(0, len(server_args.models), 3):
-            names, path, acknowledgements = server_args.models[i:i+3]
+        for i in range(0, len(server_args.models), 4):
+            names, path, tagset, acknowledgements = server_args.models[i:i+4]
             names = names.split(":")
             names = [name.split("-") for name in names]
             names = ["-".join(parts[:None if not i else -i]) for parts in names for i in range(len(parts))]
@@ -420,7 +438,7 @@ class Models:
                 print("Model in path \"{}\" already exists, sharing it also for model \"{}\"".format(path, names[0]), file=sys.stderr, flush=True)
                 model = self.models_by_paths[path]
             else:
-                print("Initializing model \"{}\" from path \"{}\"".format(names[0], path), file=sys.stderr, flush=True)
+                print("Initializing new model \"{}\" from path \"{}\"".format(names[0], path), file=sys.stderr, flush=True)
                 model = self.Model(path, names[0], acknowledgements, server_args)
 
             self.models_list.append(model)
@@ -428,6 +446,7 @@ class Models:
             self.important_names_list.append(names[0])
             for name in names:
                 self.models_by_names.setdefault(name, model)
+                self.tagsets_by_names.setdefault(name, tagset if tagset else None)
 
         # Check the default model exists
         assert self.default_model in self.models_by_names
@@ -451,21 +470,21 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
             request.respond("text/plain", code)
             request.wfile.write(message.encode("utf-8"))
 
-        def start_responding(request, url, output_param, model, infclen):
+        def start_responding(request, url, output_param, model_name, model_acknowledgements, infclen):
             if url.path.startswith("/weblicht"):
                 request.respond("application/conllu")
             else:
                 request.respond("application/json", additional_headers={"X-Billing-Input-NFC-Len": str(infclen)})
                 request.wfile.write(json.dumps(collections.OrderedDict([
-                    ("model", model.name),
-                    ("acknowledgements", ["https://ufal.mff.cuni.cz/nametag/3#acknowledgements", model.acknowledgements]),
+                    ("model", model_name),
+                    ("acknowledgements", ["https://ufal.mff.cuni.cz/nametag/3#acknowledgements", model_acknowledgements]),
                     ("result", ""),
                 ]), indent=1)[:-3].encode("utf-8"))
                 if output_param == "conllu-ne":
                     request.wfile.write(json.dumps(
                         "# generator = NameTag 3, https://lindat.mff.cuni.cz/services/nametag\n"
                         "# nametag_model = {}\n"
-                        "# nametag_model_licence = CC BY-NC-SA\n".format(model.name))[1:-1].encode("utf-8"))
+                        "# nametag_model_licence = CC BY-NC-SA\n".format(model_name))[1:-1].encode("utf-8"))
 
         def do_GET(request):
             # Parse the URL
@@ -540,10 +559,11 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                 params["data"] = unicodedata.normalize("NFC", params["data"])
 
                 # Model
-                model = params.get("model", request.server._models.default_model)
-                if model not in request.server._models.models_by_names:
-                    return request.respond_error("The requested model '{}' does not exist.".format(model))
-                model = request.server._models.models_by_names[model]
+                model_name = params.get("model", request.server._models.default_model)
+                if model_name not in request.server._models.models_by_names:
+                    return request.respond_error("The requested model '{}' does not exist.".format(model_name))
+                tagsets = request.server._models.tagsets_by_names[model_name]
+                model = request.server._models.models_by_names[model_name]
 
                 # Input
                 input_param = "untokenized" if url.path == "/tokenize" else params.get("input", "untokenized")
@@ -588,7 +608,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
 
                     # Handle empty requests separately by generating empty output with valid format and headers.
                     if len(input_tokens) == 0:
-                        request.start_responding(url, output_param, model, infclen)
+                        request.start_responding(url, output_param, model_name, model.acknowledgements, infclen)
 
                     # Tokenize without calling the NameTag 3 model.
                     elif url.path == "/tokenize":
@@ -603,7 +623,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
 
                             if not started_responding:
                                 # The first batch is ready, we commit to generate batch_output.
-                                request.start_responding(url, output_param, model, infclen)
+                                request.start_responding(url, output_param, model_name, model.acknowledgements, infclen)
                                 started_responding=True
 
                             request.wfile.write(json.dumps(batch_output, ensure_ascii=False)[1:-1].encode("utf-8"))
@@ -615,7 +635,8 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                         test_collection = NameTag3DatasetCollection(model.args,
                                                                     tokenizer=model.hf_tokenizer,
                                                                     text="\n".join(input_tokens),
-                                                                    train_collection=model._train_collection)
+                                                                    train_collection=model._train_collection,
+                                                                    tagsets=tagsets)
 
                         # Call the NameTag 3 model.
                         n_tokens_in_batches, n_nes_in_batches, n_sentences_in_batches = 0, 1, 0
@@ -639,7 +660,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
 
                             if not started_responding:
                                 # The first batch is ready, we commit to generate batch_output.
-                                request.start_responding(url, output_param, model, infclen)
+                                request.start_responding(url, output_param, model_name, model.acknowledgements, infclen)
                                 started_responding=True
 
                             if url.path.startswith("/weblicht"):

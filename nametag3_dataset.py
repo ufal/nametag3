@@ -61,27 +61,29 @@ def pad_collate(batch):
     """Pads batches of sequences with varying dimensions."""
 
     inputs, outputs = zip(*batch)
-    input_ids, word_ids = zip (*inputs)
+    input_ids, word_ids, tagset_masks = zip(*inputs)
 
     input_ids_pad = keras.ops.convert_to_tensor(torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=BATCH_PAD))
     word_ids_pad = keras.ops.convert_to_tensor(torch.nn.utils.rnn.pad_sequence(word_ids, batch_first=True, padding_value=BATCH_PAD))
+    tagset_masks_pad = keras.ops.convert_to_tensor(torch.nn.utils.rnn.pad_sequence(tagset_masks, batch_first=True, padding_value=BATCH_PAD))
     outputs_pad = keras.ops.convert_to_tensor(torch.nn.utils.rnn.pad_sequence(outputs, batch_first=True, padding_value=BATCH_PAD))
 
-    return (input_ids_pad, word_ids_pad), outputs_pad
+    return (input_ids_pad, word_ids_pad, tagset_masks_pad), outputs_pad
 
 
 class NameTag3TorchDataset(torch.utils.data.Dataset):
 
-    def __init__(self, input_ids, word_ids, outputs):
+    def __init__(self, input_ids, word_ids, tagset_masks, outputs):
         self.input_ids = input_ids
         self.word_ids = word_ids
+        self.tagset_masks = tagset_masks
         self.outputs = outputs
 
     def __len__(self):
         return len(self.input_ids)
 
     def __getitem__(self, idx):
-        return (torch.tensor(self.input_ids[idx]), torch.tensor(self.word_ids[idx])), torch.tensor(self.outputs[idx])
+        return (torch.tensor(self.input_ids[idx]), torch.tensor(self.word_ids[idx]), torch.tensor(self.tagset_masks[idx])), torch.tensor(self.outputs[idx])
 
 
 class NameTag3Dataset:
@@ -110,23 +112,22 @@ class NameTag3Dataset:
         if args.decoding == "seq2seq" and not args.context_type == "sentence":
             raise NotImplementedError("Only --context_type=sentence is implemented for --decoding=seq2seq")
 
+        if args.decoding == "seq2seq" and tagset:
+            raise NotImplementedError("Multitagset training (--tagsets) not implemented for nested NER (--decoding=seq2seq)")
+
         self._filename = filename
         self._corpus = corpus
         self._seq2seq = args.decoding == "seq2seq"
         self._args = args
         self._tokenizer = tokenizer
-        self._tagset = tagset
+        self.tagset = tagset
         self._training = train_dataset == None
-
-        if self._tagset:
-            self._tagset_token = "[TAGSET_{}]".format(tagset)
-            additional_special_token_index = self._tokenizer.additional_special_tokens.index(self._tagset_token)
-            self._tagset_token_id = self._tokenizer.additional_special_tokens_ids[additional_special_token_index]
 
         # Data structures
         self._forms = []
         self._labels = []
         self._label_ids = []
+        self._docstarts = []
 
         if train_dataset:
             self._label2id = train_dataset._label2id
@@ -151,23 +152,33 @@ class NameTag3Dataset:
         # Load the sentences
         if filename:
             print("Reading data {}{}from \"{}\"".format("of corpus \"{}\" ".format(self._corpus) if self._corpus else "",
-                                                        "with tagset \"{}\" ".format(self._tagset) if self._tagset else "",
+                                                        "with tagset \"{}\" ".format(self.tagset) if self.tagset else "",
                                                         filename),
                   file=sys.stderr, flush=True)
 
         start_time = time.time()
         with open(filename, "r", encoding="utf-8") if filename is not None else io.StringIO(text) as file:
             in_sentence = False
+            was_docstart = None
             for line in file:
                 line = line.rstrip("\r\n")
 
+                if not line and was_docstart:
+                    was_docstart += "\n"
+
                 if line:
                     columns = line.split("\t")
+
+                    if columns[0] == "-DOCSTART-":
+                        was_docstart = "-DOCSTART-\tO\n"
+                        continue
 
                     if not in_sentence:
                         self._forms.append([])
                         self._labels.append([])
                         self._label_ids.append([])
+                        self._docstarts.append(was_docstart)
+                        was_docstart = None
 
                     # FORMS information
                     self._forms[-1].append(columns[self.FORMS])
@@ -178,6 +189,16 @@ class NameTag3Dataset:
                         self._label_ids[-1].append(COLUMN_PAD)
                     else:   # dataset with both FORMS and TAGS column
                         label = columns[self.TAGS]
+
+                        if self.tagset and not self._seq2seq:
+                            if self.tagset not in TAGSETS:
+                                raise ValueError("Unknown tagset value \"{}\" of NameTag3Dataset. Known tagset values are \"{}\"".format(self.tagset, ",".join(TAGSETS.keys())))
+                            if self._training and label not in TAGSETS[self.tagset]:
+                                raise ValueError("Gold output \"{}\" not valid for tagset \"{}\"".format(label, self.tagset))
+
+                        if self.tagset and not self._seq2seq and label != "O":
+                            label += "-{}".format(self.tagset)
+
                         if label not in self._label2id:
                             if train_dataset:
                                 label = '<unk>'
@@ -210,31 +231,24 @@ class NameTag3Dataset:
         if filename:
             print("Read {} sentences from \"{}\" in {:.2f} seconds".format(len(self._forms), filename, end_time-start_time), file=sys.stderr, flush=True)
 
-        # Create dataloader if any data given.
-        if filename or text:
-            self._dataloader = self.create_torch_dataloader(args,
-                                                            shuffle=True if self._training else False)
-
-    def _split_document(self, input_ids, word_ids, strings, outputs):
+    def _split_document(self, input_ids, word_ids, docstarts, outputs):
         """Reorganize to max_context window splits instead sentences."""
 
-        input_ids_splits, word_ids_splits, strings_splits, outputs_splits = [], [], [], []
+        input_ids_splits, word_ids_splits, outputs_splits = [], [], []
 
         for s in range(len(input_ids)):   # sentences
 
             # Empty splits OR cannot fit entire sentence in current split OR
             # new document found => make new split.
-            room_for_tagset_token = self._tagset != None  # 1 if --tagsets is enabled
             if len(input_ids_splits) == 0 \
-                    or len(input_ids_splits[-1]) + len(input_ids[s]) - 1 >= self._tokenizer.model_max_length - room_for_tagset_token \
-                    or strings[s][0] == "-DOCSTART-":
+                    or len(input_ids_splits[-1]) + len(input_ids[s]) - 1 >= self._tokenizer.model_max_length \
+                    or docstarts[s]:
                 if len(input_ids_splits):   # close previous split
                     input_ids_splits[-1].append(self._tokenizer.sep_token_id)
 
                 # Start new split
                 input_ids_splits.append([self._tokenizer.cls_token_id])
                 word_ids_splits.append([])
-                strings_splits.append([])
                 outputs_splits.append([])
 
             # Update word ids
@@ -244,14 +258,13 @@ class NameTag3Dataset:
             # Extend current split
             input_ids_splits[-1].extend(input_ids[s][1:-1])
             word_ids_splits[-1].extend(word_ids[s])
-            strings_splits[-1].extend(strings[s])
             outputs_splits[-1].extend(outputs[s])
 
         # Complete the last split with [SEP]
         if input_ids_splits and input_ids_splits[-1] and input_ids_splits[-1][-1] != self._tokenizer.sep_token_id:
             input_ids_splits[-1].append(self._tokenizer.sep_token_id)
 
-        return input_ids_splits, word_ids_splits, strings_splits, outputs_splits
+        return input_ids_splits, word_ids_splits, outputs_splits
 
     @property
     def dataloader(self):
@@ -301,24 +314,25 @@ class NameTag3Dataset:
         return truecased
 
     def _tokenize(self, keep_original_casing=False):
-        input_ids, word_ids, strings, outputs = [], [], [], []
+        input_ids, word_ids, docstarts, outputs = [], [], [], []
 
         start, end = 0, self._args.batch_size
         while start < len(self._forms):
 
             batch_inputs = self._forms[start:end]
+            batch_docstarts = self._docstarts[start:end]
             batch_outputs = self._label_ids[start:end]
             inputs = self._tokenizer(batch_inputs if keep_original_casing else self._truecase(batch_inputs), add_special_tokens=False, is_split_into_words=True)
 
             # Split too long sentences, collect first subword indices for
-            # gathering in NN and split strings and outputs accordingly.
+            # gathering in NN and split docstarts and outputs accordingly.
             for s in range(len(inputs["input_ids"])):   # original sentences
                 if s and s % 100000 == 0:
                     print("Sentences tokenized: {} / {}".format(s, len(inputs["input_ids"])), file=sys.stderr, flush=True)
 
                 input_ids.append([self._tokenizer.cls_token_id])
                 word_ids.append([])
-                strings.append([])
+                docstarts.append(batch_docstarts[s])
                 outputs.append([])
 
                 for word_index in range(len(batch_inputs[s])):
@@ -337,19 +351,17 @@ class NameTag3Dataset:
 
                     # Sentence length exceeded maximum length, start new context.
                     # 1 for ending [SEP] and optionally another 1 for the tagset token
-                    room_for_special_tokens = 2 if self._tagset else 1
-                    if len(input_ids[-1]) + token_span.end - token_span.start + room_for_special_tokens >= self._tokenizer.model_max_length:
+                    if len(input_ids[-1]) + token_span.end - token_span.start + 1 >= self._tokenizer.model_max_length:
                         input_ids[-1].append(self._tokenizer.sep_token_id)
 
                         input_ids.append([self._tokenizer.cls_token_id])
                         word_ids.append([])
-                        strings.append([])
+                        docstarts.append(None)
                         outputs.append([])
 
                     # Extend the context.
                     word_ids[-1].append(len(input_ids[-1]))
                     input_ids[-1].extend(inputs["input_ids"][s][token_span.start:token_span.end] if not is_artificial_token_span else [self._tokenizer.unk_token_id])
-                    strings[-1].append(batch_inputs[s][word_index] if not is_artificial_token_span else self._tokenizer.unk_token)
                     outputs[-1].append(batch_outputs[s][word_index])
 
                 input_ids[-1].append(self._tokenizer.sep_token_id)
@@ -357,10 +369,13 @@ class NameTag3Dataset:
             start = end
             end += self._args.batch_size
 
-        return input_ids, word_ids, strings, outputs
+        return input_ids, word_ids, docstarts, outputs
 
     def forms(self):
         return self._forms
+
+    def docstarts(self):
+        return self._docstarts
 
     def labels(self):
         return self._labels
@@ -414,23 +429,23 @@ class NameTag3Dataset:
         """
 
         # Tokenize and reorganize factors accordingly
-        input_ids, word_ids, strings, outputs = self._tokenize(keep_original_casing=keep_original_casing)
+        input_ids, word_ids, docstarts, outputs = self._tokenize(keep_original_casing=keep_original_casing)
 
         # Add context
         if context_type == "split_document":
             # Reorganization from sentence-based to document-split based.
-            input_ids, word_ids, strings, outputs = self._split_document(input_ids, word_ids, strings, outputs)
+            input_ids, word_ids, outputs = self._split_document(input_ids, word_ids, docstarts, outputs)
 
         elif context_type in ["sentence", "max_context", "document"]:
 
             if context_type in ["max_context", "document"]:
-                if self._tagset:
-                    raise NotImplementedError("--tagsets not implemented for --context_type=max_context and --context_type=document")
+                if self.tagset:
+                    raise NotImplementedError("Multitagset training (--tagsets) not implemented for --context_type=max_context and --context_type=document")
 
                 inputs_with_context = []
                 context = []
                 for s in range(len(input_ids)):   # sentences
-                    if context_type == "document" and strings[s][0] == "-DOCSTART-":
+                    if context_type == "document" and docstarts[s]:
                         context = []    # new document, drop context
 
                     context.extend(input_ids[s][1:-1])  # append sentence without [CLS] and [SEP] to context
@@ -454,12 +469,6 @@ class NameTag3Dataset:
 
                 input_ids = inputs_with_context
 
-        # Add the tagset token right after [CLS] and increase word_ids accordingly.
-        if self._tagset:
-            for s in range(len(input_ids)):
-                input_ids[s].insert(1, self._tagset_token_id)
-                word_ids[s] = [x+1 for x in word_ids[s]]
-
         # For seq2seq, unpack the complex labels into the sublabels.
         if self._seq2seq:
             unpacked_outputs = [[] for i in range(len(outputs))]
@@ -469,13 +478,13 @@ class NameTag3Dataset:
                     for sublabel_str in label_str.split("|"):
                         unpacked_outputs[s].append(self._label2id_sublabel[sublabel_str])
                     unpacked_outputs[s].append(EOW)
-            return input_ids, word_ids, unpacked_outputs
+            return input_ids, word_ids, [self._tagset_mask] * len(input_ids), unpacked_outputs
         else:
-            return input_ids, word_ids, outputs
+            return input_ids, word_ids, [self._tagset_mask] * len(input_ids) , outputs
 
     def create_torch_dataset(self, args):
-        input_ids, word_ids, outputs = self._get_data_for_nn_dataset(args.context_type, args.keep_original_casing)
-        return NameTag3TorchDataset(input_ids, word_ids, outputs)
+        input_ids, word_ids, tagset_masks, outputs = self._get_data_for_nn_dataset(args.context_type, args.keep_original_casing)
+        return NameTag3TorchDataset(input_ids, word_ids, tagset_masks, outputs)
 
     def create_torch_dataloader(self, args, shuffle=False):
         torch_dataset = self.create_torch_dataset(args)
@@ -526,17 +535,20 @@ class NameTag3Dataset:
     def create_tagset_mask(self, all_tags):
         """Create tagset_mask for multitagset training."""
 
-        if self._tagset == None:
-            self.tagset_mask = None
-            return
+        # noop mask for training without tagsets (just add zero to logits).
+        if self.tagset == None:
+            self._tagset_mask = [0.] * len(all_tags)
 
-        if self._tagset not in TAGSETS:
-            raise ValueError("Unknown tagset value \"{}\" of NameTag3Dataset. Known tagset values are \"{}\"".format(self._tagset, ",".join(TAGSETS.keys())))
+        # Multitagset training.
+        else:
+            if self.tagset not in TAGSETS:
+                raise ValueError("Unknown tagset value \"{}\" of NameTag3Dataset. Known tagset values are \"{}\"".format(self.tagset, ",".join(TAGSETS.keys())))
 
-        self.tagset_mask = [-1e9] * len(self.id2label())
+            self._tagset_mask = [-1e9] * len(all_tags)
 
-        # Mark positions with valid tags in this dataset.
-        for tag in TAGSETS[self._tagset] + CONTROL_LABELS:
-            if tag in all_tags:
-                index = all_tags.index(tag)
-                self.tagset_mask[index] = 0.
+            # Mark positions with valid tags in this dataset.
+            for tag in TAGSETS[self.tagset]:
+                tag_with_tagset = "{}-{}".format(tag, self.tagset) if tag != "O" else tag
+                if tag_with_tagset in all_tags:
+                    index = all_tags.index(tag_with_tagset)
+                    self._tagset_mask[index] = 0.

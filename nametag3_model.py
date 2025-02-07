@@ -415,6 +415,12 @@ class GatherLayer(keras.layers.Layer):
         return keras.ops.take_along_axis(inputs, keras.ops.expand_dims(keras.ops.maximum(word_ids, 0), nametag3_dataset.BATCH_PAD), axis=1)
 
 
+class TagsetMaskLayer(keras.layers.Layer):
+
+    def call(self, inputs, tagset_masks):
+        return inputs + tagset_masks[:, None, ]
+
+
 class PLMLayer(keras.layers.Layer):
     """Custom Keras layer as a wrapper around PyTorch AutoModel."""
 
@@ -608,7 +614,7 @@ class NameTag3Model(keras.Model):
         print("Loading previously saved checkpoint from \"{}\"".format(path), file=sys.stderr, flush=True)
 
         # Must call on fake dummy batch to force build.
-        self((keras.ops.ones((1,1), dtype="int32"), keras.ops.zeros((1,1), dtype="int32")))
+        self((keras.ops.ones((1,1), dtype="int32"), keras.ops.zeros((1,1), dtype="int32"), keras.ops.zeros((1,), dtype="float32")))
 
         self.load_weights(path)
 
@@ -695,7 +701,7 @@ class NameTag3ModelSeq2seq(NameTag3Model):
     def call(self, inputs, training=False):
         """Forward pass."""
 
-        input_ids, word_ids = inputs
+        input_ids, word_ids, _ = inputs
         embeddings = self._embeddings(input_ids)
         gathered = self._gathered(embeddings, word_ids=word_ids)
         dropout = self._dropout(gathered)
@@ -709,7 +715,7 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         """Override train_step to use DecoderTraining."""
 
         x, y = data
-        input_ids, word_ids = x
+        input_ids, word_ids, _ = x
 
         # Compute predictions.
         embeddings = self._embeddings(input_ids, training=True)
@@ -747,7 +753,7 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         """
 
         x, y = data
-        input_ids, word_ids = x
+        input_ids, word_ids, _ = x
 
         y_pred = self(x, training=False)
 
@@ -772,9 +778,6 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         of the output.
         """
 
-        if dataset.tagset_mask:
-            raise NotImplementedError("Multitagset learning not implemented for nested NEs")
-
         # For simplicity, seq2seq batch decoding is implemented for
         # --context_type=sentence only. The sentences are never concatenated to
         # create a larger context and are always processed one by one. The only
@@ -785,11 +788,15 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         predicted_tag_ids = []  # all predicted tag ids (sentences x tags)
         batch_output = []       # accumulated batch output to be yielded
         forms = dataset.forms()
-        batch_iterator = iter(dataset.dataloader)
+        docstarts = dataset.docstarts()
+        batch_iterator = iter(dataset.create_torch_dataloader(args, shuffle=False))
         yield_batch = False     # yield batch at the end of sentence
 
         for s in range(len(forms)): # original sentences
             batch_output.append("")
+
+            if docstarts[s]:
+                batch_output.append(docstarts[s])
 
             t = 0
             for f in range(len(forms[s])):  # original words
@@ -842,14 +849,16 @@ class NameTag3ModelClassification(NameTag3Model):
     def call(self, inputs, training=False):
         """Forward pass."""
 
-        input_ids, word_ids = inputs
+        input_ids, word_ids, tagset_masks = inputs
         embeddings = self._embeddings(input_ids)
         gathered = self._gathered(embeddings, word_ids=word_ids)
         dropout = self._dropout(gathered)
-        return self._outputs(dropout)
+        outputs = self._outputs(dropout)
+        return self._tagset_masked_outputs(outputs, tagset_masks)
 
     def build(self, _input_shape):
         self._outputs = keras.layers.Dense(self._output_layer_dim)
+        self._tagset_masked_outputs = TagsetMaskLayer()
 
     def _create_metrics(self):
         return [SeqevalF1Score(self._id2label, name="f1")]
@@ -882,11 +891,15 @@ class NameTag3ModelClassification(NameTag3Model):
         t = 0                   # tags within sentences in predicted_tag_ids
         batch_output = []       # accumulated batch output to be yielded
         forms = dataset.forms()
-        batch_iterator = iter(dataset.dataloader)
+        docstarts = dataset.docstarts()
+        batch_iterator = iter(dataset.create_torch_dataloader(args, shuffle=False))
         yield_batch = False     # yield batch at the end of sentence
 
         for s in range(len(forms)): # original sentences
             batch_output.append("")
+
+            if docstarts[s]:
+                batch_output.append(docstarts[s])
 
             for f in range(len(forms[s])):  # original words
 
@@ -900,14 +913,11 @@ class NameTag3ModelClassification(NameTag3Model):
                     # a condition to prevent this.
                     if predicted_s >= len(predicted_tag_ids):
                         inputs, _ = next(batch_iterator)
-                        _, word_ids = inputs
+                        _, word_ids, tagset_masks = inputs
                         word_ids = word_ids.numpy(force=True)
+                        tagset_masks = tagset_masks.numpy(force=True)
 
                         predicted_logits = self.predict_on_batch(inputs)
-
-                        # Apply tagset mask to mask out invalid tags in multitagset learning.
-                        if dataset.tagset_mask:
-                            predicted_logits += dataset.tagset_mask
 
                         for i in range(len(predicted_logits)):
                             predicted_tag_ids.append(np.argmax(predicted_logits[i][word_ids[i] != nametag3_dataset.BATCH_PAD], axis=-1).tolist())
@@ -916,7 +926,10 @@ class NameTag3ModelClassification(NameTag3Model):
 
                     t = 0
 
+                # Read next label
                 label = self._id2label[predicted_tag_ids[predicted_s][t]]
+                if dataset.tagset:  # remove the tagset appendix
+                    label = label.rsplit("-", 1)[0]
                 t += 1
 
                 batch_output[-1] += "{}\t{}\n".format(forms[s][f], label)

@@ -106,17 +106,30 @@ class NameTag3DatasetCollection:
     dataset in the collection has the complete vocabularies.
     """
 
-    def __init__(self, args, tokenizer=None, filenames=None, text=None, train_collection=None):
+    def __init__(self, args, tokenizer, filenames=None, text=None, train_collection=None, tagsets=None):
 
         self._datasets = []
         self._corpora = args.corpus.split(",") if args.corpus else None
-        self._tagsets = args.tagsets.split(",") if hasattr(args, "tagsets") and args.tagsets else None
+        self._training = train_collection == None
 
-        if self._tagsets:
-            special_tokens_dict = {}
-            special_tokens_dict["additional_special_tokens"] = ["[TAGSET_{}]".format(tagset) for tagset in set(self._tagsets)]
-            tokenizer.add_special_tokens(special_tokens_dict)
+        # Tagsets
+        self.tagsets = tagsets.split(",") if tagsets else None
+        default_tagset = args.default_tagset if hasattr(args, "default_tagset") else None
 
+        # Default tagset must be specified for multitagset training.
+        if self._training and self.tagsets and not default_tagset:
+            raise ValueError("--default_tagset must be specified if --tagsets are used in training.")
+
+        # Default tagset must be one of the specified tagsets.
+        if self._training and self.tagsets and default_tagset not in set(self.tagsets):
+            raise ValueError("--default_tagset must be one of --tagsets for multitagset training.")
+
+        # Fallback to default tagset if no tagset for dev/test.
+        if train_collection and train_collection.tagsets and not self.tagsets:
+            print("Falling back to default tagset \"{}\" as no tagset specified.".format(default_tagset), file=sys.stderr, flush=True)
+            self.tagsets = [default_tagset] * len(filenames) if filenames else [default_tagset]
+
+        # Reading dataset(s) from file(s).
         if filenames:
             for i, filename in enumerate(filenames.split(",")):
                 self._datasets.append(NameTag3Dataset(args,
@@ -125,29 +138,29 @@ class NameTag3DatasetCollection:
                                                       train_dataset=train_collection.datasets[-1] if train_collection else None,
                                                       previous_dataset=self._datasets[-1] if i and not train_collection else None,
                                                       corpus=self._corpora[i] if self._corpora else str("corpus_{}".format(i+1)),
-                                                      tagset=self._tagsets[i] if self._tagsets else None))
+                                                      tagset=self.tagsets[i] if self.tagsets else None))
         # Reading from text (used by the server) allows creation of exactly one
         # dataset in the collection.
-        else:
+        elif text:
             self._datasets.append(NameTag3Dataset(args,
                                                   tokenizer=tokenizer,
                                                   text=text,
                                                   train_dataset=train_collection.datasets[-1] if train_collection else None,
                                                   previous_dataset=None,
                                                   corpus=args.corpus if args.corpus else "corpus 1",
-                                                  tagset=self._tagsets[0] if self._tagsets else None))
+                                                  tagset=self.tagsets[0] if self.tagsets else None))
 
-        # Create dataloaders if any data given.
+        # Create individual dataset tagset masks before collection dataloaders.
+        for dataset in self._datasets:
+            dataset.create_tagset_mask(self.id2label())
+
+        # Create collection dataloaders.
         self._dataloader, self._dataloaders = None, None
         if filenames or text:
             self._dataloader = self.create_torch_dataloader(args,
                                                             shuffle=True if not train_collection else False,
                                                             sampling=args.sampling if not train_collection else "concatenate")
             self._dataloaders = self.create_torch_dataloaders(args, shuffle=True if not train_collection else False)
-
-        # Create tagset masks in all datasets.
-        for dataset in self._datasets:
-            dataset.create_tagset_mask(self.id2label())
 
     def label2id(self):
         return self._datasets[-1].label2id()

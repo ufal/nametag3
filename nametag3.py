@@ -106,6 +106,7 @@ if __name__ == "__main__":
     parser.add_argument("--context_type", default="split_document", choices=["max_context", "sentence", "document", "split_document"], help="Context type to add to sentence.")
     parser.add_argument("--corpus", default=None, type=str, help="Corpus name. If given for training, the corpus name will be saved with the model.")
     parser.add_argument("--decoding", default="classification", choices=["classification", "seq2seq"], help="Decoding head.")
+    parser.add_argument("--default_tagset", default="conll", choices=["conll", "uner", "onto"], help="Default tagset if --tagsets used during training. Use --default_tagset during training to save with the model as a fallback tagset for dev/test data predicted later without specified --tagsets.")
     parser.add_argument("--dev_data", default=None, type=str, help="Dev data.")
     parser.add_argument("--dropout", default=0.5, type=float, help="Dropout rate.")
     parser.add_argument("--epochs", default="10", type=int, help="Number of epochs.")
@@ -145,8 +146,10 @@ if __name__ == "__main__":
     if args.load_checkpoint:
         with open("{}/options.json".format(args.load_checkpoint), mode="r") as options_file:
             train_args = argparse.Namespace(**json.load(options_file))
-        for key in ["checkpoint_filename", "context_type", "decoding", "hf_plm", "keep_original_casing"]:
-            args.__dict__[key] = train_args.__dict__[key]
+        for key in ["checkpoint_filename", "context_type", "decoding",
+                    "default_tagset", "hf_plm", "keep_original_casing"]:
+            if hasattr(train_args, key):
+                args.__dict__[key] = train_args.__dict__[key]
 
     # Set threads and random seed
     torch.set_num_threads(args.threads)
@@ -162,11 +165,12 @@ if __name__ == "__main__":
     if args.corpus and len(args.corpus.split(",")) > 1:
         logargs["corpus"]="multilingual"
 
-    for key in ["checkpoint_filename", "dev_data", "keep_original_casing",
-                "load_checkpoint", "logdir", "max_labels_per_token",
-                "max_sentences_train", "prevent_all_dropouts", "sampling",
-                "save_best_checkpoint", "seed", "subword_masking", "tagsets",
-                "temperature", "test_data", "threads", "time", "train_data",
+    for key in ["checkpoint_filename", "dev_data", "default_tagset",
+                "keep_original_casing", "load_checkpoint", "logdir",
+                "max_labels_per_token", "max_sentences_train",
+                "prevent_all_dropouts", "sampling", "save_best_checkpoint",
+                "seed", "subword_masking", "tagsets", "temperature",
+                "test_data", "threads", "time", "train_data",
                 "transformer_hidden_dropout_prob",
                 "transformer_attention_probs_dropout_prob", "warmup_epochs",
                 "warmup_epochs_frozen"]:
@@ -192,21 +196,21 @@ if __name__ == "__main__":
     # We load the training data only to get the mappings, nothing else is used.
     train_loaded=None
     if args.load_checkpoint:
-        train_loaded = NameTag3DatasetCollection(args)
+        train_loaded = NameTag3DatasetCollection(args, tokenizer, tagsets=train_args.tagsets if hasattr(train_args, "tagsets") and train_args.tagsets else None)
         train_loaded.load_collection_mappings(args.load_checkpoint)
 
     train_collection=None
     if args.train_data:
-        train_collection = NameTag3DatasetCollection(args, tokenizer=tokenizer, filenames=args.train_data, train_collection=train_loaded)
+        train_collection = NameTag3DatasetCollection(args, tokenizer, filenames=args.train_data, train_collection=train_loaded, tagsets=args.tagsets)
         if args.save_best_checkpoint:
             train_collection.save_mappings(args.logdir)
 
     dev_collection=None
     if args.dev_data:
-        dev_collection = NameTag3DatasetCollection(args, tokenizer=tokenizer, filenames=args.dev_data, train_collection=train_collection if args.train_data else train_loaded)
+        dev_collection = NameTag3DatasetCollection(args, tokenizer, filenames=args.dev_data, train_collection=train_collection if args.train_data else train_loaded, tagsets=args.tagsets)
 
     if args.test_data:
-        test_collection = NameTag3DatasetCollection(args, tokenizer=tokenizer, filenames=args.test_data, train_collection=train_collection if args.train_data else train_loaded)
+        test_collection = NameTag3DatasetCollection(args, tokenizer, filenames=args.test_data, train_collection=train_collection if args.train_data else train_loaded, tagsets=args.tagsets)
 
     # Construct the model
     model = nametag3_model_factory(args.decoding)(len(train_collection.label2id().keys()) if train_collection else len(train_loaded.label2id().keys()),
@@ -230,7 +234,7 @@ if __name__ == "__main__":
     if args.load_checkpoint:
         model.load_checkpoint(os.path.join(args.load_checkpoint, args.checkpoint_filename))
         if args.remove_optimizer_from_checkpoint:
-            new_checkpoint_filename = os.path.join(args.logdir, "{}_wo_optimizer.weights.h5".format(args.load_checkpoint, args.checkpoint_filename[:-len(".weights.h5")]))
+            new_checkpoint_filename = os.path.join(args.logdir, "{}_wo_optimizer.weights.h5".format(args.checkpoint_filename[:-len(".weights.h5")]))
             print("Saving checkpoint without optimizer to {}".format(new_checkpoint_filename), file=sys.stderr, flush=True)
             model.optimizer = None
             model.save_weights(new_checkpoint_filename)
