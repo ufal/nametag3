@@ -355,3 +355,12 @@ Novák	I-P|B-ps
 
 - [Jana Straková](https://ufal.mff.cuni.cz/jana-strakova), `strakova@ufal.mff.cuni.cz`
 - [Milan Straka](https://ufal.mff.cuni.cz/milan-straka), `straka@ufal.mff.cuni.cz`
+
+
+## Acknowledgements
+
+This work has been supported by the MŠMT OP JAK program, project No.
+CZ.02.01.01/00/22_008/0004605 and by the Grant Agency of the Czech Republic
+under the EXPRO program as project “LUSyD” (project No. GX20-16819X). The work
+described herein has also been using data provided by the [LINDAT/CLARIAH-CZ Research Infrastructure](https://lindat.cz), supported by the Ministry of
+Education, Youth and Sports of the Czech Republic (Project No. LM2023062).
