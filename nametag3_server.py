@@ -424,7 +424,8 @@ class Models:
         self.default_model = server_args.default_model
         self.models_by_names = {}   # model names and language variants
         self.models_by_paths = {}   # paths to initialized models
-        self.important_names_list = []    # important names to list
+        self.canonical_names = []    # canonical model names list
+        self.alias_to_canonical = {}    # resolve model alias names
         self.tagsets_by_names = {}  # model name to tagset
 
         for i in range(0, len(server_args.models), 4):
@@ -441,10 +442,11 @@ class Models:
                 model = self.Model(path, names[0], acknowledgements, server_args)
 
             self.models_by_paths[path] = model
-            self.important_names_list.append(names[0])
+            self.canonical_names.append(names[0])
             for name in names:
                 self.models_by_names.setdefault(name, model)
                 self.tagsets_by_names.setdefault(name, tagset if tagset else None)
+                self.alias_to_canonical.setdefault(name, names[0])
 
         # Check the default model exists
         assert self.default_model in self.models_by_names
@@ -542,7 +544,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
             # Handle /models
             if url.path == "/models":
                 response = {
-                    "models": {name: ["tokenize", "recognize"] for name in request.server._models.important_names_list},
+                    "models": {name: ["tokenize", "recognize"] for name in request.server._models.canonical_names},
                     "default_model": request.server._models.default_model,
                 }
                 request.respond("application/json")
@@ -558,6 +560,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
 
                 # Model
                 model_name = params.get("model", request.server._models.default_model)
+                canonical_model_name = request.server._models.alias_to_canonical[model_name]
                 if model_name not in request.server._models.models_by_names:
                     return request.respond_error("The requested model '{}' does not exist.".format(model_name))
                 tagsets = request.server._models.tagsets_by_names[model_name]
@@ -606,7 +609,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
 
                     # Handle empty requests separately by generating empty output with valid format and headers.
                     if len(input_tokens) == 0:
-                        request.start_responding(url, output_param, model_name, model.acknowledgements, infclen)
+                        request.start_responding(url, output_param, canonical_model_name, model.acknowledgements, infclen)
 
                     # Tokenize without calling the NameTag 3 model.
                     elif url.path == "/tokenize":
@@ -621,7 +624,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
 
                             if not started_responding:
                                 # The first batch is ready, we commit to generate batch_output.
-                                request.start_responding(url, output_param, model_name, model.acknowledgements, infclen)
+                                request.start_responding(url, output_param, canonical_model_name, model.acknowledgements, infclen)
                                 started_responding=True
 
                             request.wfile.write(json.dumps(batch_output, ensure_ascii=False)[1:-1].encode("utf-8"))
@@ -658,7 +661,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
 
                             if not started_responding:
                                 # The first batch is ready, we commit to generate batch_output.
-                                request.start_responding(url, output_param, model_name, model.acknowledgements, infclen)
+                                request.start_responding(url, output_param, canonical_model_name, model.acknowledgements, infclen)
                                 started_responding=True
 
                             if url.path.startswith("/weblicht"):
