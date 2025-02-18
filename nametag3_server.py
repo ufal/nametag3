@@ -422,7 +422,6 @@ class Models:
 
     def __init__(self, server_args):
         self.default_model = server_args.default_model
-        self.models_list = []   # initialized models
         self.models_by_names = {}   # model names and language variants
         self.models_by_paths = {}   # paths to initialized models
         self.important_names_list = []    # important names to list
@@ -441,7 +440,6 @@ class Models:
                 print("Initializing new model \"{}\" from path \"{}\"".format(names[0], path), file=sys.stderr, flush=True)
                 model = self.Model(path, names[0], acknowledgements, server_args)
 
-            self.models_list.append(model)
             self.models_by_paths[path] = model
             self.important_names_list.append(names[0])
             for name in names:
