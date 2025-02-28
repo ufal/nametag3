@@ -18,10 +18,16 @@ file.
 Example Usage:
 --------------
 
-./llm_baseline.py --test_data english-CoNLL2003-conll_test.conll --server http://ollama-server:port --output_filename english-CoNLL2003-conll_test.deepseek.conll
+For zero-shot DeepSeek:
 
-Input (the gold tags will be ignored, can be given without them):
------------------------------------------------------------------
+./llm_baseline.py --test_data test.conll --server http://ollama-server:port --output_filename test.deepseek.conll
+
+For 5-shot DeepSeek:
+
+./llm_baseline.py --test_data test.conll --server http://ollama-server:port --output_filename test.deepseek.conll --train_data train.conll --examples_n=5
+
+Input (the gold tags will be ignored for prediction, can be given without them):
+--------------------------------------------------------------------------------
 
 John	B-PER
 loves	O
@@ -48,6 +54,7 @@ John	B-PER
 """
 
 
+import random
 import requests
 import sys
 import time
@@ -65,7 +72,8 @@ TAGSETS = {
 def read_data(filename):
     """Read input data from CoNLL format file."""
 
-    lines = []
+    lines, entities = [], []
+    label, entity = None, []
     in_sentence = False
     with open(filename, "r", encoding="utf-8") as fr:
         for line in fr:
@@ -73,14 +81,32 @@ def read_data(filename):
 
             if not line:
                 in_sentence = False
+
+                # Entity ends here.
+                if label:
+                    entities[-1].append((label, " ".join(entity)))
+                    label, entity = None, []
+
             else:
                 if not in_sentence:
                     lines.append([])
+                    entities.append([])
                     in_sentence = True
 
                 cols = line.split()
                 lines[-1].append(cols[0])
-    return lines
+
+                # Entity ends here.
+                if label and (cols[1] == "O" or cols[1].split("-")[1] != label):
+                    entities[-1].append((label, " ".join(entity)))
+                    label, entity = None, []
+
+                # Entity starts or continues here.
+                if cols[1] != "O":
+                    label = cols[1].split("-")[1]
+                    entity.append(cols[0])
+
+    return lines, entities
 
 
 def extract_entities(text, nsentences):
@@ -144,6 +170,37 @@ def print_iob2(batch_tokens, batch_entities, fw):
         print("", file=fw, flush=True)
 
 
+def select_examples(lines, entities, tagset, n, maxlen):
+    """Selects n examples for each tag of given tagset."""
+
+    # Sort lines by tags they are examples of.
+    examples = {}
+    for tag in TAGSETS[tagset]:
+        examples[tag] = []
+
+    for line, line_entities in zip(lines, entities):
+        if len(line) > maxlen:
+            continue
+        for tag in list(set(t[0] for t in line_entities)):
+            examples[tag].append((line, line_entities))
+
+    # Select random n sentences for each tag.
+    prompt = []
+    for tag in TAGSETS[tagset]:
+        indices = range(len(examples[tag]))
+        if len(indices) > n:
+            indices = random.sample(indices, n)
+        for idx in indices:
+            prompt.append(" ".join(examples[tag][idx][0]))
+
+            entities_str = []
+            for label, entity in examples[tag][idx][1]:
+                entities_str.append("{}: {}".format(label, entity))
+            prompt.append("[ENTITIES] " + ", ".join(entities_str))
+
+    return "\n".join(prompt)
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -152,18 +209,21 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=1, type=int, help="Number of sentences to be sent together. Default: 1.")
     parser.add_argument("--context_left", default=0, type=int, help="Number of sentences added as left context. Default: no context.")
     parser.add_argument("--context_right", default=0, type=int, help="Number of sentences added as right context. Default: no context.")
+    parser.add_argument("--examples_n", default=5, type=int, help="Number of examples for few-shot learning. Default: .5")
+    parser.add_argument("--examples_maxlen", default=20, type=int, help="Maximal length of example sentence in tokens. Default: 20.")
     parser.add_argument("--max_tokens", default=5000, type=int, help="Maximum tokens in sentences (recommended: max LLM context size / 2).")
     parser.add_argument("--model", default="deepseek-r1:70b", type=str, help="Model name.")
     parser.add_argument("--output_filename", default=None, type=str, help="Output filename (optional). If omitted, prints to STDOUT.")
+    parser.add_argument("--seed", default=42, type=int, help="Random seed.")
     parser.add_argument("--server", required=True, default=None, type=str, help="Server address with port.")
     parser.add_argument("--sleep", default=1, type=int, help="Sleep seconds between requests.")
     parser.add_argument("--tagset", choices=["conll", "uner", "onto"], default="conll", type=str, help="Tagset name.")
     parser.add_argument("--test_data", required=True, default=None, type=str, help="Test data CoNLL file.")
-
-    # TODO: Implement few-shot prompting.
-    #parser.add_argument("--train_data", default=None, type=str, help="Train data CoNLL file (optional). It omitted (default), zero-shot prompt will be used, else a few-shot prompt.")
+    parser.add_argument("--train_data", default=None, type=str, help="Train data CoNLL file (optional). It omitted (default), zero-shot prompt will be used, else a few-shot prompt with n given in --examples_n.")
 
     args = parser.parse_args()
+
+    random.seed(args.seed)
 
     # Compile the prompt.
     if args.batch_size > 1:
@@ -178,8 +238,13 @@ If no entities are found, return \"[ENTITIES] (none)\".\n".format(", ".join(TAGS
     if args.context_left or args.context_right:
         PROMPT += "The sentences marked with [CONTEXT] provide context, but do not extract entities from them.\n"
 
+    if args.train_data:
+        train_lines, train_entities = read_data(args.train_data)
+        examples = select_examples(train_lines, train_entities, args.tagset, args.examples_n, args.examples_maxlen)
+        PROMPT += "Examples of correctly identified named entities follow:\n{}\n".format(examples)
+
     # Read test data from the CoNLL file.
-    test_lines = read_data(args.test_data)
+    test_lines, _ = read_data(args.test_data)
 
     # Open output file.
     fw = sys.stdout
