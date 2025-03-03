@@ -497,7 +497,7 @@ class NameTag3Dataset:
         if self._corpus in EVAL_SCRIPTS:
             return EVAL_SCRIPTS[self._corpus]
         else:
-            raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given nested corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3Dataset._EVAL_SCRIPTS.")
+            raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given nested corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3Dataset.EVAL_SCRIPTS.")
 
     def evaluate(self, dataset_type, predictions_filename, logdir):
         """Evaluate NEs in predictions_filename against the dataset's gold NEs.
