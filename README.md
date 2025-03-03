@@ -5,8 +5,11 @@ recognition (NER). NameTag 3 identifies proper names in text and classifies them
 into a set of predefined categories, such as names of persons, locations,
 organizations, etc.
 
-NameTag 3 offers state-of-the-art or near state-of-the-art performance in 17
-languages, including English, German, Czech, and Ukrainian.
+NameTag 3 achieves state of the art performance on 21 test datasets in 15
+languages: Cebuano, Chinese, Croatian, Czech, Danish, English, Norwegian Bokmål,
+Norwegian Nynorsk, Portuguese, Russian, Serbian, Slovak, Swedish, Tagalog, and
+Ukrainian. It also delivers competitive results on Arabic, Dutch, German,
+Maghrebi, and Spanish, as of February 2025.
 
 NameTag 3 is a free software under [Mozilla Public License 2.0](htts://www.mozilla.org/MPL/2.0/), and the linguistic models are free for non-commercial use and distributed under [CC BY-NC-SA license](https://creativecommons.org/licenses/by-nc-sa/3.0/), although for some models the original data used to create the
 model may impose additional licensing conditions. NameTag is versioned using [Semantic Versioning](https://semver.org./).
