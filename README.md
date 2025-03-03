@@ -5,7 +5,7 @@ recognition (NER). NameTag 3 identifies proper names in text and classifies them
 into a set of predefined categories, such as names of persons, locations,
 organizations, etc.
 
-NameTag 3 achieves state of the art performance on 21 test datasets in 15
+NameTag 3 achieves state-of-the-art performance on 21 test datasets in 15
 languages: Cebuano, Chinese, Croatian, Czech, Danish, English, Norwegian Bokmål,
 Norwegian Nynorsk, Portuguese, Russian, Serbian, Slovak, Swedish, Tagalog, and
 Ukrainian. It also delivers competitive results on Arabic, Dutch, German,
