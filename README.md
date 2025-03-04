@@ -219,7 +219,7 @@ venv/bin/pip3 install -r requirements.txt
 
 3. Download the NameTag 3 Models:
 
-Download the [latest version of NameTag 3 models](https://ufal.mff.cuni.cz/nametag/3#models).
+Download the [latest version of NameTag 3 models](https://ufal.mff.cuni.cz/nametag/3/models).
 
 4. The `nametag3.py` script is then called using the Python installed in your virtual environment:
 
