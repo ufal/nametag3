@@ -129,6 +129,16 @@ class NameTag3DatasetCollection:
             print("Falling back to default tagset \"{}\" as no tagset specified.".format(default_tagset), file=sys.stderr, flush=True)
             self.tagsets = [default_tagset] * len(filenames) if filenames else [default_tagset]
 
+        # Must not request --tagsets for prediction with a model trained without --tagsets.
+        if train_collection and self.tagsets and not train_collection.tagsets:
+            raise ValueError("Requested --tagsets for prediction with a model trained without --tagsets.")
+
+        # Tagsets requested for prediction must be among tagsets used for training the model.
+        if train_collection and train_collection.tagsets and self.tagsets:
+            for tagset in self.tagsets:
+                    if tagset not in set(train_collection.tagsets):
+                        raise ValueError("Tagset '{}' requested for prediction was not among tagsets used for training the model ({})".format(tagset, ",".join(set(train_collection.tagsets))))
+
         # Reading dataset(s) from file(s).
         if filenames:
             for i, filename in enumerate(filenames.split(",")):
