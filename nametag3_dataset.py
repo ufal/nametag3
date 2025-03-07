@@ -51,10 +51,13 @@ TAGSETS = {
 
 # Official eval stripts for nested corpora.
 
-# CNEC 2.0 eval script is corrected in comparison to the original to not
-# fail on zero division in case of very bad system predictions after the
-# first few epochs of training.
-EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh"}
+# CNEC 2.0 eval script is corrected in comparison to the officially distributed
+# evaluation script to not fail on zero division in case of very bad system
+# predictions after the first few epochs of training.
+EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh",
+                "english-ACE2004": "run_eval_nested.sh",
+                "english-ACE2005": "run_eval_nested.sh",
+                "english-GENIA": "run_eval_nested.sh"}
 
 
 def pad_collate(batch):
@@ -527,6 +530,12 @@ class NameTag3Dataset:
                     line = line.strip("\n")
                     if line.startswith("accuracy:"):
                         f1 = float(line.split()[-1])
+        elif eval_script == "run_eval_nested.sh":
+            with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
+                for line in result_file:
+                    line = line.strip("\n")
+                    if line.startswith("F1"):
+                        f1 = float(line.split(" ")[-1])
         else:
             raise NotImplementedError("Parsing of the eval script \"{}\" output not implemented".format(eval_script))
 

@@ -191,7 +191,7 @@ if __name__ == "__main__":
 
     # Load the tokenizer
     tokenizer = transformers.AutoTokenizer.from_pretrained(args.hf_plm,
-                                                           add_prefix_space = args.hf_plm in ["roberta-base", "roberta-large", "ufal/robeczech-base"])
+                                                           add_prefix_space = args.hf_plm in ["roberta-base", "roberta-large", "ufal/robeczech-base", "allenai/biomed_roberta_base"])
 
     # We load the training data only to get the mappings, nothing else is used.
     train_loaded=None

@@ -8,69 +8,81 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Converts the NameTag 3 output to the official CNEC 2.0 evaluation script
-input.
-
-Input: CoNLL file with linearized (encoded) nested named entity labels
-delimited with | (the output of NameTag 3).
-
-Output: One entity mention per line, two columns per line separated by tab.
-First column are entity mention token ids separated by comma, second column is
-a BIO or BILOU label (the intput to compare_ne_outputs_v3_corrected.pl).
-
-The output can be then evaluated with compare_ne_outputs_v3_corrected.pl
-against the gold data.
 """
+Prints the (nested) named entities for evaluation.
+
+Input:
+------
+
+A CoNLL file with linearized (encoded) nested named entity labels delimited
+with '|' (the output of NameTag 3 or the gold CoNLL file).
+
+Output:
+-------
+
+One entity per line, three columns per line separated by tab:
+    - first column are entity token ids separated by comma,
+    - second column is the BIO or BILOU label,
+    - the third column are the tokens separated by comma.
+
+The output can be then evaluated with 'compare_nested_entities.py' against the
+entities printed from the gold data.
+"""
+
 
 import sys
 
-COL_SEP = "\t"
 
-def raw(label):
-    return label[2:]
+SEP = "\t"
 
-def flush(running_ids, running_forms, running_labels):
-    for i in range(len(running_ids)):
-        print(running_ids[i] + COL_SEP + running_labels[i] + COL_SEP + running_forms[i])
-    return ([], [], [])
+
+def flush(ids, forms, tags):
+    for i in range(len(ids)):
+        print(ids[i] + SEP + tags[i] + SEP + forms[i])
+    return [], [], []
+
 
 if __name__ == "__main__":
 
     i = 0
-    running_ids = []
-    running_forms = []
-    running_labels = []
+    ids, forms, tags = [], [], []
     for line in sys.stdin:
         line = line.rstrip("\r\n")
-        if not line: # flush entities
-            (running_ids, running_forms, running_labels) = flush(running_ids, running_forms, running_labels)
+
+        if not line:    # sentence ended, flush entities
+            ids, forms, tags = flush(ids, forms, tags)
+
         else:
-            cols = line.split("\t")
+            cols = line.split(SEP)
+
             if len(cols) != 2:
-                print("conll2eval_nested.py: Incorrect number of fields in line " + str(i), file=sys.stderr)
-                print("conll2eval_nested.py: Expected 2, found " + str(len(cols)), file=sys.stderr)
-                print("conll2eval_nested.py: Line: \"" + line + "\"" , file=sys.stderr)
-                sys.exit()
-            form, ne = line.split("\t")
-            if ne == "O": # flush entities
-                (running_ids, running_forms, running_labels) = flush(running_ids, running_forms, running_labels)
+                raise ValueError("conll2eval_nested.py: Incorrect number of fields in line {}".format(i))
+
+            form, ne = line.split(SEP)
+
+            if ne == "O": # all entities ended, also flush entities
+                ids, forms, tags = flush(ids, forms, tags)
+
             else:
-                labels = ne.split("|")
-                for j in range(len(labels)): # for each label
-                    label = labels[j]
-                    if j < len(running_ids): # running entity
+
+                for j, label in enumerate(ne.split("|")):
+
+                    if j < len(ids): # running entity
+
                         # previous running entity ends here, print and insert new entity instead
-                        if label.startswith("B-") or label.startswith("U-") or running_labels[j] != raw(label):
-                            print(running_ids[j] + COL_SEP + running_labels[j] + COL_SEP + running_forms[j])
-                            running_ids[j] = str(i)
-                            running_forms[j] = form
+                        if label.startswith("B-") or label.startswith("U-") or tags[j] != label[2:]:
+                            print(ids[j] + SEP + tags[j] + SEP + forms[j])
+                            ids[j] = str(i)
+                            forms[j] = form
+
                         # entity continues, append ids and forms
                         else:
-                            running_ids[j] += "," + str(i)
-                            running_forms[j] += " " + form
-                        running_labels[j] = raw(label)
+                            ids[j] += "," + str(i)
+                            forms[j] += " " + form
+                        tags[j] = label[2:]
+
                     else: # no running entities, new entity starts here, just append
-                        running_ids.append(str(i))
-                        running_forms.append(form)
-                        running_labels.append(raw(label))
+                        ids.append(str(i))
+                        forms.append(form)
+                        tags.append(label[2:])
         i += 1
