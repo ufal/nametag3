@@ -181,8 +181,10 @@ Or you can specify the output filename:
 ```
 
 4. Additionally, you can specify the language of your data or the exact required
-model for your data. The language options are `english`, `german`, `dutch`, `spanish`,
-`ukraininan`, and `czech` (lowercased):
+   model for your data. The language options are `arabic`, `chinese`,
+   `croatian`, `czech`, `danish`, `dutch`, `english`, `german`, `maghrebi`,
+   `norwegian_bokmaal`, `norwegian_nynorsk`, `portuguese`, `serbian`, `slovak`,
+   `spanish`, `swedish`, and `ukrainian`.
 
 ```sh
 ./nametag3_client.py examples/en_input.txt --model=english > output_file.xml
