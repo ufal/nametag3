@@ -209,7 +209,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=1, type=int, help="Number of sentences to be sent together. Default: 1.")
     parser.add_argument("--context_left", default=0, type=int, help="Number of sentences added as left context. Default: no context.")
     parser.add_argument("--context_right", default=0, type=int, help="Number of sentences added as right context. Default: no context.")
-    parser.add_argument("--examples_n", default=5, type=int, help="Number of examples for few-shot learning. Default: .5")
+    parser.add_argument("--examples_n", default=5, type=int, help="Number of examples for few-shot learning. Default: 5")
     parser.add_argument("--examples_maxlen", default=20, type=int, help="Maximal length of example sentence in tokens. Default: 20.")
     parser.add_argument("--max_tokens", default=5000, type=int, help="Maximum tokens in sentences (recommended: max LLM context size / 2).")
     parser.add_argument("--model", default="deepseek-r1:70b", type=str, help="Model name.")
