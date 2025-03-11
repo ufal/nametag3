@@ -51,10 +51,13 @@ TAGSETS = {
 
 # Official eval stripts for nested corpora.
 
-# CNEC 2.0 eval script is corrected in comparison to the original to not
-# fail on zero division in case of very bad system predictions after the
-# first few epochs of training.
-EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh"}
+# CNEC 2.0 eval script is corrected in comparison to the officially distributed
+# evaluation script to not fail on zero division in case of very bad system
+# predictions after the first few epochs of training.
+EVAL_SCRIPTS = {"czech-cnec2.0": "run_cnec2.0_eval_nested_corrected.sh",
+                "english-ACE2004": "run_eval_nested.sh",
+                "english-ACE2005": "run_eval_nested.sh",
+                "english-GENIA": "run_eval_nested.sh"}
 
 
 def pad_collate(batch):
@@ -497,7 +500,7 @@ class NameTag3Dataset:
         if self._corpus in EVAL_SCRIPTS:
             return EVAL_SCRIPTS[self._corpus]
         else:
-            raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given nested corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3Dataset._EVAL_SCRIPTS.")
+            raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given nested corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. Other supported nested NE corpora are 'english-ACE2004', 'english-ACE2005', and 'english-GENIA'. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3Dataset.EVAL_SCRIPTS.")
 
     def evaluate(self, dataset_type, predictions_filename, logdir):
         """Evaluate NEs in predictions_filename against the dataset's gold NEs.
@@ -527,6 +530,12 @@ class NameTag3Dataset:
                     line = line.strip("\n")
                     if line.startswith("accuracy:"):
                         f1 = float(line.split()[-1])
+        elif eval_script == "run_eval_nested.sh":
+            with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
+                for line in result_file:
+                    line = line.strip("\n")
+                    if line.startswith("F1"):
+                        f1 = float(line.split(" ")[-1])
         else:
             raise NotImplementedError("Parsing of the eval script \"{}\" output not implemented".format(eval_script))
 

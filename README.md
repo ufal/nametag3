@@ -5,8 +5,11 @@ recognition (NER). NameTag 3 identifies proper names in text and classifies them
 into a set of predefined categories, such as names of persons, locations,
 organizations, etc.
 
-NameTag 3 offers state-of-the-art or near state-of-the-art performance in 17
-languages, including English, German, Czech, and Ukrainian.
+NameTag 3 achieves state-of-the-art performance on 21 test datasets in 15
+languages: Cebuano, Chinese, Croatian, Czech, Danish, English, Norwegian Bokmål,
+Norwegian Nynorsk, Portuguese, Russian, Serbian, Slovak, Swedish, Tagalog, and
+Ukrainian. It also delivers competitive results on Arabic, Dutch, German,
+Maghrebi, and Spanish, as of February 2025.
 
 NameTag 3 is a free software under [Mozilla Public License 2.0](htts://www.mozilla.org/MPL/2.0/), and the linguistic models are free for non-commercial use and distributed under [CC BY-NC-SA license](https://creativecommons.org/licenses/by-nc-sa/3.0/), although for some models the original data used to create the
 model may impose additional licensing conditions. NameTag is versioned using [Semantic Versioning](https://semver.org./).
@@ -124,7 +127,9 @@ into a file, you can type:
 ```
 
 4. Additionally, you can specify the language of your data. The options are
-`english`, `german`, `dutch`, `spanish`, `ukraininan`, and `czech` (lowercased):
+   `arabic`, `chinese`, `croatian`, `czech`, `danish`, `dutch`, `english`,
+   `german`, `maghrebi`, `norwegian_bokmaal`, `norwegian_nynorsk`, `portuguese`,
+   `serbian`, `slovak`, `spanish`, `swedish`, and `ukrainian`.
 
 ```sh
 ./nametag3_with_curl.sh examples/en_input.txt english > output_file.xml
@@ -176,8 +181,10 @@ Or you can specify the output filename:
 ```
 
 4. Additionally, you can specify the language of your data or the exact required
-model for your data. The language options are `english`, `german`, `dutch`, `spanish`,
-`ukraininan`, and `czech` (lowercased):
+   model for your data. The language options are `arabic`, `chinese`,
+   `croatian`, `czech`, `danish`, `dutch`, `english`, `german`, `maghrebi`,
+   `norwegian_bokmaal`, `norwegian_nynorsk`, `portuguese`, `serbian`, `slovak`,
+   `spanish`, `swedish`, and `ukrainian`.
 
 ```sh
 ./nametag3_client.py examples/en_input.txt --model=english > output_file.xml
@@ -211,14 +218,25 @@ git clone https://github.com/ufal/nametag3
 
 ```sh
 python3 -m venv venv
-venv/bin/pip3 install -r requirements.txt
 ```
 
-3. Download the NameTag 3 Models:
+3. Make sure you are running the latest version of pip (optional):
 
-Download the [latest version of NameTag 3 models](https://ufal.mff.cuni.cz/nametag/3#models).
+```sh
+venv/bin/pip install -U pip
+```
 
-4. The `nametag3.py` script is then called using the Python installed in your virtual environment:
+4. Install the required packages:
+
+```sh
+venv/bin/pip install -r requirements.txt
+```
+
+5. Download and unzip the NameTag 3 Models:
+
+Download the [latest version of NameTag 3 models](https://ufal.mff.cuni.cz/nametag/3/models).
+
+6. The `nametag3.py` script is then called using the Python installed in your virtual environment:
 
 ```sh
 venv/bin/python3 ./nametag3.py [--argument=value]

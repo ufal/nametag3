@@ -7,7 +7,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# A simple script for accessing NameTag 3 API using curl.
+# A simple script for accessing NameTag 3 REST API using curl.
 #
 # This is a simple script for accessing NameTag 3 webservice from the command
 # line using curl. The script will call a server. Do not send personal or
@@ -38,7 +38,9 @@
 # ./nametag3_with_curl.sh examples/cs_input.txt > output_file.xml
 #
 # Additionally, you can specify the language of your data. The options are
-# english, german, dutch, spanish, ukraininan, and czech (lowercased):
+# arabic, chinese, croatian, czech, danish, dutch, english, german, maghrebi,
+# norwegian_bokmaal, norwegian_nynorsk, portuguese, serbian, slovak, spanish,
+# swedish, and ukrainian.
 #
 # ./nametag3_with_curl.sh examples/en_input.txt english > output_file.xml
 
@@ -47,13 +49,14 @@ set -e
 
 # Check the commandline arguments.
 if [ "$#" -ne 1 -a "$#" -ne 2 ]; then
-    echo "./nametag3_with_curl.sh input_file (english|german|dutch|spanish|ukrainian|czech)"
+    echo "USAGE: ./nametag3_with_curl.sh input_file arabic|chinese|croatian|czech|danish|dutch|english|german|maghrebi|norwegian_bokmaal|norwegian_nynorsk|portuguese|serbian|slovak|spanish|swedish|ukrainian"
     exit 1
 fi
 
 # Extract the commandline arguments.
 input_file="$1"
 
+# Default language is czech
 model="czech"
 if [ "$#" -eq 2 ]; then
   model="$2"
