@@ -213,6 +213,7 @@ if __name__ == "__main__":
     parser.add_argument("--examples_maxlen", default=20, type=int, help="Maximal length of example sentence in tokens. Default: 20.")
     parser.add_argument("--max_tokens", default=5000, type=int, help="Maximum tokens in sentences (recommended: max LLM context size / 2).")
     parser.add_argument("--model", default="deepseek-r1:70b", type=str, help="Model name.")
+    parser.add_argument("--num_ctx", default=None, type=int, help="Model context size.")
     parser.add_argument("--output_filename", default=None, type=str, help="Output filename (optional). If omitted, prints to STDOUT.")
     parser.add_argument("--seed", default=42, type=int, help="Random seed.")
     parser.add_argument("--server", required=True, default=None, type=str, help="Server address with port.")
@@ -282,11 +283,18 @@ If no entities are found, return \"[ENTITIES] (none)\".\n".format(", ".join(TAGS
             entities = [[]]
         # Make request.
         else:
-            response = requests.post("{}/api/generate".format(args.server), json={
+            response_options_json = {
                 "model": args.model,
                 "prompt": batch_prompt,
                 "stream": False
-            })
+            }
+
+            if args.num_ctx:
+                response_options_json["options"] = {
+                    "num_ctx": args.num_ctx
+                }
+
+            response = requests.post("{}/api/generate".format(args.server), json=response_options_json)
 
             entities = [[] for _ in range(len(test_lines[i:i+args.batch_size]))]
             if response.status_code == 200:
