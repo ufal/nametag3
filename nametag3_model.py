@@ -431,9 +431,6 @@ class PLMLayer(keras.layers.Layer):
 
         plm = transformers.AutoModel.from_pretrained(hf_plm)
 
-        # Resize because of potentially added tagset tokens.
-        plm.resize_token_embeddings(len(tokenizer))
-
         self._plm = plm
         self._plm_config = plm.config
 

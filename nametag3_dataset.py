@@ -352,8 +352,8 @@ class NameTag3Dataset:
 
                         print("Word generated without corresponding token by the HF tokenizer, creating artificial token \"{}\". Word: \"{}\". Sentence: {}".format(self._tokenizer.unk_token, batch_inputs[s][word_index], batch_inputs[s]), file=sys.stderr, flush=True)
 
-                    # Sentence length exceeded maximum length, start new context.
-                    # 1 for ending [SEP] and optionally another 1 for the tagset token
+                    # Sentence length exceeded maximum length, start new
+                    # context. +1 is for [SEP].
                     if len(input_ids[-1]) + token_span.end - token_span.start + 1 >= self._tokenizer.model_max_length:
                         input_ids[-1].append(self._tokenizer.sep_token_id)
 
