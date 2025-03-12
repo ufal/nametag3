@@ -248,8 +248,8 @@ venv/bin/python3 ./nametag3.py [--argument=value]
 ### Installation for AMD
 
 In step 4, delete `torch` from `requirements.txt`, and install all the required
-packages except PyTorch with RoCm support, which will be installed with
-a separate command later:
+packages except PyTorch with ROCm support, which will be installed with
+a separate command:
 
 ```sh
 venv/bin/pip install -r requirements.txt
