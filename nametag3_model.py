@@ -424,14 +424,12 @@ class TagsetMaskLayer(keras.layers.Layer):
 class PLMLayer(keras.layers.Layer):
     """Custom Keras layer as a wrapper around PyTorch AutoModel."""
 
-    def __init__(self, hf_plm, tokenizer, hidden_dropout_prob=None, attention_probs_dropout_prob=None):
+    def __init__(self, hf_plm, tokenizer):
         super().__init__()
 
         config = transformers.AutoConfig.from_pretrained(hf_plm)
 
-        plm = transformers.AutoModel.from_pretrained(hf_plm,
-                                                     hidden_dropout_prob = hidden_dropout_prob if hidden_dropout_prob else config.hidden_dropout_prob,
-                                                     attention_probs_dropout_prob = attention_probs_dropout_prob if attention_probs_dropout_prob else config.attention_probs_dropout_prob)
+        plm = transformers.AutoModel.from_pretrained(hf_plm)
 
         # Resize because of potentially added tagset tokens.
         plm.resize_token_embeddings(len(tokenizer))
@@ -486,17 +484,9 @@ class NameTag3Model(keras.Model):
 
         super().__init__()
 
-        # Process the command-line args.
-        if args.prevent_all_dropouts:
-            args.dropout = 0.
-            args.transformer_hidden_dropout_prob = 0.
-            args.transformer_attention_probs_dropout_prob = 0.
-
         # Layers
         self._embeddings = PLMLayer(args.hf_plm,
-                                    tokenizer,
-                                    hidden_dropout_prob=args.transformer_hidden_dropout_prob,
-                                    attention_probs_dropout_prob=args.transformer_attention_probs_dropout_prob)
+                                    tokenizer)
         self._gathered = GatherLayer()
         self._dropout = keras.layers.Dropout(args.dropout)
 
