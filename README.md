@@ -208,6 +208,8 @@ script command-line arguments.
 
 ## Installation
 
+### Installation for NVIDIA
+
 1. Clone the repository:
 
 ```sh
@@ -240,6 +242,18 @@ Download the [latest version of NameTag 3 models](https://ufal.mff.cuni.cz/namet
 
 ```sh
 venv/bin/python3 ./nametag3.py [--argument=value]
+```
+
+
+### Installation for AMD
+
+In step 4, delete `torch` from `requirements.txt`, and install all the required
+packages except PyTorch with RoCm support, which will be installed with
+a separate command later:
+
+```sh
+venv/bin/pip install -r requirements.txt
+venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2.4
 ```
 
 
