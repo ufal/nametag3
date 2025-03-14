@@ -424,18 +424,14 @@ class TagsetMaskLayer(keras.layers.Layer):
 class PLMLayer(keras.layers.Layer):
     """Custom Keras layer as a wrapper around PyTorch AutoModel."""
 
-    def __init__(self, hf_plm, tokenizer):
+    def __init__(self, hf_plm, tokenizer, load_checkpoint):
         super().__init__()
 
-        config = transformers.AutoConfig.from_pretrained(hf_plm)
-
-        plm = transformers.AutoModel.from_pretrained(hf_plm)
-
-        self._plm = plm
-        self._plm_config = plm.config
-
-    def plm_config(self):
-        return self._plm_config
+        if load_checkpoint:
+            config = transformers.AutoConfig.from_pretrained(hf_plm)
+            self._plm = transformers.AutoModel.from_config(config)
+        else:
+            self._plm = transformers.AutoModel.from_pretrained(hf_plm)
 
     def call(self, inputs, training=False):
         return self._plm(keras.ops.maximum(inputs, 0), attention_mask=inputs > nametag3_dataset.BATCH_PAD).last_hidden_state
@@ -483,7 +479,8 @@ class NameTag3Model(keras.Model):
 
         # Layers
         self._embeddings = PLMLayer(args.hf_plm,
-                                    tokenizer)
+                                    tokenizer,
+                                    load_checkpoint=args.load_checkpoint)
         self._gathered = GatherLayer()
         self._dropout = keras.layers.Dropout(args.dropout)
 
@@ -688,6 +685,12 @@ class NameTag3ModelSeq2seq(NameTag3Model):
     def call(self, inputs, training=False):
         """Forward pass."""
 
+        # Make sure we are in correct training/inference mode, as HF
+        # Transformer loaded with from_config() by default sets training, while
+        # from_pretrained() by default sets inference.
+        if (training or False) != self._embeddings.training:
+            self._embeddings.train(training or False)
+
         input_ids, word_ids, _ = inputs
         embeddings = self._embeddings(input_ids)
         gathered = self._gathered(embeddings, word_ids=word_ids)
@@ -835,6 +838,12 @@ class NameTag3ModelClassification(NameTag3Model):
     # all subsequent layers from the context.
     def call(self, inputs, training=False):
         """Forward pass."""
+
+        # Make sure we are in correct training/inference mode, as HF
+        # Transformer loaded with from_config() by default sets training, while
+        # from_pretrained() by default sets inference.
+        if (training or False) != self._embeddings.training:
+            self._embeddings.train(training or False)
 
         input_ids, word_ids, tagset_masks = inputs
         embeddings = self._embeddings(input_ids)
