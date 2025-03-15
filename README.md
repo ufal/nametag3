@@ -208,6 +208,8 @@ script command-line arguments.
 
 ## Installation
 
+### Installation for NVIDIA
+
 1. Clone the repository:
 
 ```sh
@@ -240,6 +242,18 @@ Download the [latest version of NameTag 3 models](https://ufal.mff.cuni.cz/namet
 
 ```sh
 venv/bin/python3 ./nametag3.py [--argument=value]
+```
+
+
+### Installation for AMD
+
+In step 4, delete `torch` from `requirements.txt`, and install all the required
+packages except PyTorch with ROCm support, which will be installed with
+a separate command:
+
+```sh
+venv/bin/pip install -r requirements.txt
+venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2.4
 ```
 
 
@@ -323,7 +337,7 @@ a `nametag3-multilingual-uner-250203` model, and finally, also as
 a `nametag3-multilingual-onto-250203` model.
 
 Furthermore, the model name in the first argument can be extended with aliases,
-delimited by commas. In the following example, the Czech model
+delimited by colons. In the following example, the Czech model
 `nametag3-czech-cnec2.0-240830` is also served as `czech` and `cs`.
 
 ### Example Usage

@@ -136,8 +136,8 @@ class NameTag3DatasetCollection:
         # Tagsets requested for prediction must be among tagsets used for training the model.
         if train_collection and train_collection.tagsets and self.tagsets:
             for tagset in self.tagsets:
-                    if tagset not in set(train_collection.tagsets):
-                        raise ValueError("Tagset '{}' requested for prediction was not among tagsets used for training the model ({})".format(tagset, ",".join(set(train_collection.tagsets))))
+                if tagset not in set(train_collection.tagsets):
+                    raise ValueError("Tagset '{}' requested for prediction was not among tagsets used for training the model ({})".format(tagset, ",".join(set(train_collection.tagsets))))
 
         # Reading dataset(s) from file(s).
         if filenames:
