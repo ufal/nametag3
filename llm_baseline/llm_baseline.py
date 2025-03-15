@@ -69,7 +69,7 @@ TAGSETS = {
 }
 
 
-def read_data(filename):
+def read_data(filename, resume_after=0):
     """Read input data from CoNLL format file."""
 
     lines, entities = [], []
@@ -106,7 +106,7 @@ def read_data(filename):
                     label = cols[1].split("-")[1]
                     entity.append(cols[0])
 
-    return lines, entities
+    return lines[resume_after:], entities[resume_after:]
 
 
 def extract_entities(text, nsentences):
@@ -215,6 +215,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="deepseek-r1:70b", type=str, help="Model name.")
     parser.add_argument("--num_ctx", default=None, type=int, help="Model context size.")
     parser.add_argument("--output_filename", default=None, type=str, help="Output filename (optional). If omitted, prints to STDOUT.")
+    parser.add_argument("--resume_after", default=0, type=int, help="Number of sentences to resume prediction after. Useful to resume after prompting failed on a larger file.")
     parser.add_argument("--seed", default=42, type=int, help="Random seed.")
     parser.add_argument("--server", required=True, default=None, type=str, help="Server address with port.")
     parser.add_argument("--sleep", default=1, type=int, help="Sleep seconds between requests.")
@@ -245,7 +246,7 @@ If no entities are found, return \"[ENTITIES] (none)\".\n".format(", ".join(TAGS
         PROMPT += "Examples of correctly identified named entities follow:\n{}\n".format(examples)
 
     # Read test data from the CoNLL file.
-    test_lines, _ = read_data(args.test_data)
+    test_lines, _ = read_data(args.test_data, resume_after=args.resume_after)
 
     # Open output file.
     fw = sys.stdout
@@ -294,13 +295,16 @@ If no entities are found, return \"[ENTITIES] (none)\".\n".format(", ".join(TAGS
                     "num_ctx": args.num_ctx
                 }
 
-            response = requests.post("{}/api/generate".format(args.server), json=response_options_json)
-
             entities = [[] for _ in range(len(test_lines[i:i+args.batch_size]))]
-            if response.status_code == 200:
-                entities = extract_entities(response.json()["response"], len(test_lines[i:i+args.batch_size]))
-            else:
-                print("Warning: Response status code {} for sentences {}-{}".format(response.status_code, i, i+args.batch_size), file=sys.stderr)
+
+            try:
+                response = requests.post("{}/api/generate".format(args.server), json=response_options_json)
+                if response.status_code == 200:
+                    entities = extract_entities(response.json()["response"], len(test_lines[i:i+args.batch_size]))
+                else:
+                    print("Warning: Response status code {} for sentences {}-{}".format(response.status_code, i, i+args.batch_size), file=sys.stderr)
+            except requests.exceptions.RequestException as error:
+                print("Warning: A server error occured on the side of server: {} for sentences {}-{}".format(error, i, i+args.batch_size), file=sys.stderr)
 
         # Print IOB2 matched entities into CoNLL-2003 format.
         print_iob2(test_lines[i:i+args.batch_size], entities, fw)
