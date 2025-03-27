@@ -3,7 +3,6 @@
 #SBATCH -p gpu-queue
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
-#SBATCH --mem=32G
 
 # Copyright 2024 Institute of Formal and Applied Linguistics, Faculty of
 # Mathematics and Physics, Charles University, Czech Republic.
