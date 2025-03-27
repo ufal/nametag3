@@ -279,7 +279,7 @@ boundaries. Input examples can be found in `nametag3.py` and in `examples`.
 
 The main NameTag 3 script `nametag3.py` can be used for training a custom
 corpus. It will do so when provided the parameters `--train_data`. Optionally,
-`--dev_data` and training hyperparameters can be provided.
+`--dev_data` and other training hyperparameters can be provided.
 
 The input data file format is a vertical file, one token and its label(s) per
 line: labels separated by a `|`, columns separated by a tabulator; sentences
@@ -288,30 +288,11 @@ CoNLL-2003 shared task). A line containing `-DOCSTART-` with the label `O`, as
 seen in the CoNLL-2003 shared task data, can be used to mark document
 boundaries. Input examples can be found in `nametag3.py` and in `examples`.
 
-Example usage of multilingual traning for flat NER with a softmax classification
-head:
+See the exact training scripts for the published NameTag 3 models:
 
-```sh
-venv/bin/python3 nametag3.py \
-  --batch_size=8 \
-  --context_type="split_document" \
-  --corpus="english-CoNLL2003-conll,german-CoNLL2003-conll,spanish-CoNLL2002-conll,dutch-CoNLL2002-conll,czech-cnec2.0-conll,ukrainian-languk-conll" \
-  --decoding="classification" \
-  --dev_data=data/english-CoNLL2003-conll/dev.conll,data/german-CoNLL2003-conll/dev.conll,data/spanish-CoNLL2002-conll/dev.conll,data/dutch-CoNLL2002-conll/dev.conll,data/czech-cnec2.0-conll/dev.conll,data/ukrainian-languk-conll/dev.conll \
-  --dropout=0.5 \
-  --epochs=20 \
-  --evaluate_test_data \
-  --hf_plm="xlm-roberta-large" \
-  --learning_rate=2e-5 \
-  --logdir="logs/" \
-  --name="multilingual" \
-  --sampling="temperature" \
-  --save_best_checkpoint \
-  --test_data=data/english-CoNLL2003-conll/test.conll,data/german-CoNLL2003-conll/test.conll,data/spanish-CoNLL2002-conll/test.conll,data/dutch-CoNLL2002-conll/test.conll,data/czech-cnec2.0-conll/test.conll,data/ukrainian-languk-conll/test.conll \
-  --threads=4 \
-  --train_data=data/english-CoNLL2003-conll/train.conll,data/german-CoNLL2003-conll/train.conll,data/spanish-CoNLL2002-conll/train.conll,data/dutch-CoNLL2002-conll/train.conll,data/czech-cnec2.0-conll/train.conll,data/ukrainian-languk-conll/train.conll \
-  --warmup_epochs=1
-```
+- [nametag3-czech-cnec2.0](https://github.com/ufal/nametag3/blob/main/train_nametag3-czech-cnec2.0-240830_on_slurm_gpu.sh),
+- [nametag3-multilingual-250203](https://github.com/ufal/nametag3/blob/main/train_nametag3-multilingual-250203_on_slurm_gpu.sh),
+- [nametag3-multilingual-conll-240830](https://github.com/ufal/nametag3/blob/main/train_nametag3-multilingual-conll-240830_on_slurm_gpu.sh).
 
 
 ## NameTag 3 Server
