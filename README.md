@@ -290,9 +290,9 @@ boundaries. Input examples can be found in `nametag3.py` and in `examples`.
 
 See the exact training scripts for the published NameTag 3 models:
 
-- [nametag3-czech-cnec2.0](https://github.com/ufal/nametag3/blob/main/train_nametag3-czech-cnec2.0-240830_on_slurm_gpu.sh): [documentation](https://ufal.mff.cuni.cz/nametag/3/models#czech-cnec2), [download](http://hdl.handle.net/11234/1-5677),
-- [nametag3-multilingual-250203](https://github.com/ufal/nametag3/blob/main/train_nametag3-multilingual-250203_on_slurm_gpu.sh): [documentation](https://ufal.mff.cuni.cz/nametag/3/models#multilingual), [download](http://hdl.handle.net/11234/1-5859),
-- [nametag3-multilingual-conll-240830](https://github.com/ufal/nametag3/blob/main/train_nametag3-multilingual-conll-240830_on_slurm_gpu.sh): [documentation](https://ufal.mff.cuni.cz/nametag/3/models#multilingual-conll), [download](http://hdl.handle.net/11234/1-5678).
+- Czech CNEC 2.0 Model `nametag3-czech-cnec2.0-2422803`: [script](https://github.com/ufal/nametag3/blob/main/train_nametag3-czech-cnec2.0-240830_on_slurm_gpu.sh): [documentation](https://ufal.mff.cuni.cz/nametag/3/models#czech-cnec2), [download](http://hdl.handle.net/11234/1-5677),
+- Multilingual Model `nametag3-multilingual-250203`: [script](https://github.com/ufal/nametag3/blob/main/train_nametag3-multilingual-250203_on_slurm_gpu.sh): [documentation](https://ufal.mff.cuni.cz/nametag/3/models#multilingual), [download](http://hdl.handle.net/11234/1-5859),
+- Multilingual CoNLL Model `nametag3-multilingual-conll-240803`: [script](https://github.com/ufal/nametag3/blob/main/train_nametag3-multilingual-conll-240830_on_slurm_gpu.sh): [documentation](https://ufal.mff.cuni.cz/nametag/3/models#multilingual-conll), [download](http://hdl.handle.net/11234/1-5678).
 
 
 ## NameTag 3 Server
