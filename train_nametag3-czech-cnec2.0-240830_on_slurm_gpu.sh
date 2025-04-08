@@ -22,7 +22,7 @@
 #
 # To submit to Slurm, call this script as:
 #
-# sbatch -C gpuram40G|gpuram48G --mem=8G ./train_nametag3-czech-cnec2.0-240830_on_slurm_gpu.sh
+# sbatch -C "gpuram40G|gpuram48G" --mem=8G ./train_nametag3-czech-cnec2.0-240830_on_slurm_gpu.sh
 #
 # You may be able to get away with less GPU RAM than 40G|48G for fine-tuning
 # a model of Base size (~110M params), as this GPU RAM is safe for a Large
