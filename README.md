@@ -277,22 +277,9 @@ boundaries. Input examples can be found in `nametag3.py` and in `examples`.
 
 ## Training NameTag 3
 
-The main NameTag 3 script `nametag3.py` can be used for training a custom
-corpus. It will do so when provided the parameters `--train_data`. Optionally,
-`--dev_data` and other training hyperparameters can be provided.
-
-The input data file format is a vertical file, one token and its label(s) per
-line: labels separated by a `|`, columns separated by a tabulator; sentences
-delimited by newlines (such as the first and the fourth column in the well-known
-CoNLL-2003 shared task). A line containing `-DOCSTART-` with the label `O`, as
-seen in the CoNLL-2003 shared task data, can be used to mark document
-boundaries. Input examples can be found in `nametag3.py` and in `examples`.
-
-See the exact training scripts for the published NameTag 3 models:
-
-- Czech CNEC 2.0 Model `nametag3-czech-cnec2.0-240830`: [training script](https://github.com/ufal/nametag3/blob/main/train_nametag3-czech-cnec2.0-240830_on_slurm_gpu.sh), [model documentation](https://ufal.mff.cuni.cz/nametag/3/models#czech-cnec2), [model download](http://hdl.handle.net/11234/1-5677)
-- Multilingual Model `nametag3-multilingual-250203`: [training script](https://github.com/ufal/nametag3/blob/main/train_nametag3-multilingual-250203_on_slurm_gpu.sh), [model documentation](https://ufal.mff.cuni.cz/nametag/3/models#multilingual), [model download](http://hdl.handle.net/11234/1-5859),
-- Multilingual CoNLL Model `nametag3-multilingual-conll-240830`: [training script](https://github.com/ufal/nametag3/blob/main/train_nametag3-multilingual-conll-240830_on_slurm_gpu.sh), [model documentation](https://ufal.mff.cuni.cz/nametag/3/models#multilingual-conll), [model download](http://hdl.handle.net/11234/1-5678).
+Please refer to the [NameTag 3 Training
+Tutorial](https://ufal.mff.cuni.cz/nametag/3/tutorial) which will guide you
+through the process of training a NameTag 3 model tailored to your data.
 
 
 ## NameTag 3 Server
