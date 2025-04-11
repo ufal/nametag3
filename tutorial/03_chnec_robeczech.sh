@@ -30,7 +30,7 @@
 #
 # To submit to Slurm, call this script as:
 #
-# sbatch -C "gpuram40G|gpuram48G" --mem=8G ./train_chnec_robeczech.sh
+# sbatch -C "gpuram40G|gpuram48G" --mem=8G ./03_chnec_robeczech.sh
 #
 # You may be able to get away with less GPU RAM than 40G|48G for fine-tuning
 # a model of Base size (~110M params), as this GPU RAM is safe for a Large
