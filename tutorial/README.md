@@ -25,3 +25,6 @@ the following sections:
   Tagset](https://ufal.mff.cuni.cz/nametag/3/tutorial#multitagset_training_new_tagset):
   - [09_chnec_w_multilingual.sh](https://github.com/ufal/nametag3/blob/main/tutorial/09_chnec_w_multilingual.sh)
   - [10_chnec-conll_w_multilingual.sh](https://github.com/ufal/nametag3/blob/main/tutorial/10_chnec-conll_w_multilingual.sh)
+- [Continued
+  Fine-Tuning](https://ufal.mff.cuni.cz/nametag/3/tutorial#continued_finetuning):
+  - [11_chnec-conll_after_multilingual.sh](https://github.com/ufal/nametag3/blob/main/tutorial/11_chnec-conll_after_multilingual.sh)
