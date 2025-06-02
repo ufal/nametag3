@@ -17,7 +17,12 @@
 #
 # https://ufal.mff.cuni.cz/nametag/3/tutorial
 #
-# If you use this software, please give us credit by referencing https://aclanthology.org/P19-1527.pdf
+# If you use this software, please give us credit by referencing
+#
+# Straková Jana, Straka Milan: NameTag 3: A Tool and a Service for
+# Multilingual/Multitagset NER. In: Proceedings of the 63rd Annual Meeting of
+# the Association for Computational Linguistics (Volume: System
+# Demonstrations), 2025. To appear.
 #
 # This script trains NameTag 3 on the Czech Historical Named Entity Corpus
 # (CHNEC) with the CoNLL NE labels (PER, ORG, LOC, MISC) by further fine-tuning
