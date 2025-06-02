@@ -44,10 +44,10 @@ license, although for some models the original data used to create the model
 may impose additional licensing conditions. NameTag is versioned using
 [Semantic Versioning](https://semver.org/).
 
-If you use this tool for scientific work, please give us credit by referencing **Straková & Straka (2025)** (see below).
+If you use this tool for scientific work, please give us credit by referencing [Straková & Straka (2025)](#how-to-cite-nametag-3).
 
 
-## Please Cite as (How to Cite)
+## How to Cite NameTag 3
 
 If you use this software, please give us credit by referencing **Straková & Straka (2025)**:
 
