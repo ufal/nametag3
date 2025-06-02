@@ -53,6 +53,16 @@ If you use this software, please give us credit by referencing **Straková & Str
 
 Straková Jana, Straka Milan: *NameTag 3: A Tool and a Service for Multilingual/Multitagset NER.* In: Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume: System Demonstrations), 2025. To appear.
 
+```sh
+@inproceedings{strakova2025nametag,
+  author    = {Jana Straková and Milan Straka},
+  title     = {{NameTag 3: A Tool and a Service for Multilingual/Multitagset NER}},
+  booktitle = {Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume: System Demonstrations)},
+  year      = {2025},
+  note      = {To appear}
+}
+```
+
 
 ## Versions
 
@@ -64,16 +74,6 @@ Compared to [NameTag 2](https://ufal.mff.cuni.cz/nametag/2/), [NameTag 3](https:
 either a classification head for flat NEs (e.g., the CoNLL-2003 English data) or
 with seq2seq decoding head for nested NEs (e.g., the CNEC 2.0 Czech data). The
 seq2seq decoding head is the head proposed by [Straková et al. (2019)](https://aclanthology.org/P19-1527).
-
-```sh
-@inproceedings{strakova2025nametag,
-  author    = {Jana Straková and Milan Straka},
-  title     = {{NameTag 3: A Tool and a Service for Multilingual/Multitagset NER}},
-  booktitle = {Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume: System Demonstrations)},
-  year      = {2025},
-  note      = {To appear}
-}
-```
 
 
 ## Requirements
