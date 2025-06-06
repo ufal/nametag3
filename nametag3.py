@@ -11,27 +11,16 @@
 """NameTag 3, flat and nested NER training and prediction script.
 
 Implements both standard flat NER by fine-tuning with a softmax classification
-layer and nested NER by seq2seq decoder with hard attention proposed in
-https://aclanthology.org/P19-1527.pdf.
+layer and nested NER by seq2seq decoder with hard attention.
 
-If you use this software, please give us credit by referencing https://aclanthology.org/P19-1527.pdf:
+If you use this software, please give us credit by referencing Straková & Straka (2025):
 
-@inproceedings{strakova-etal-2019-neural,
-    title = "Neural Architectures for Nested {NER} through Linearization",
-    author = "Strakov{\'a}, Jana  and
-      Straka, Milan  and
-      Hajic, Jan",
-    editor = "Korhonen, Anna  and
-      Traum, David  and
-      M{\`a}rquez, Llu{\'\i}s",
-    booktitle = "Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics",
-    month = jul,
-    year = "2019",
-    address = "Florence, Italy",
-    publisher = "Association for Computational Linguistics",
-    url = "https://aclanthology.org/P19-1527",
-    doi = "10.18653/v1/P19-1527",
-    pages = "5326--5331",
+@inproceedings{strakova2025nametag,
+  author    = {Jana Straková and Milan Straka},
+  title     = {{NameTag 3: A Tool and a Service for Multilingual/Multitagset NER}},
+  booktitle = {Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume: System Demonstrations)},
+  year      = {2025},
+  note      = {To appear}
 }
 
 Installation:

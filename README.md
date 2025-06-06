@@ -44,28 +44,22 @@ license, although for some models the original data used to create the model
 may impose additional licensing conditions. NameTag is versioned using
 [Semantic Versioning](https://semver.org/).
 
+If you use this tool for scientific work, please give us credit by referencing [Straková & Straka (2025)](#how-to-cite-nametag-3).
 
-## Please Cite as (How to Cite)
 
-If you use this software, please give us credit by referencing [Straková et al. (2019)](https://aclanthology.org/P19-1527.pdf):
+## How to Cite NameTag 3
 
-```
-@inproceedings{strakova-etal-2019-neural,
-    title = "Neural Architectures for Nested {NER} through Linearization",
-    author = "Strakov{\'a}, Jana  and
-      Straka, Milan  and
-      Hajic, Jan",
-    editor = "Korhonen, Anna  and
-      Traum, David  and
-      M{\`a}rquez, Llu{\'\i}s",
-    booktitle = "Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics",
-    month = jul,
-    year = "2019",
-    address = "Florence, Italy",
-    publisher = "Association for Computational Linguistics",
-    url = "https://aclanthology.org/P19-1527",
-    doi = "10.18653/v1/P19-1527",
-    pages = "5326--5331",
+If you use this software, please give us credit by referencing **Straková & Straka (2025)**:
+
+Straková Jana, Straka Milan: *NameTag 3: A Tool and a Service for Multilingual/Multitagset NER.* In: Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume: System Demonstrations), 2025. To appear.
+
+```sh
+@inproceedings{strakova2025nametag,
+  author    = {Jana Straková and Milan Straka},
+  title     = {{NameTag 3: A Tool and a Service for Multilingual/Multitagset NER}},
+  booktitle = {Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume: System Demonstrations)},
+  year      = {2025},
+  note      = {To appear}
 }
 ```
 
@@ -277,41 +271,9 @@ boundaries. Input examples can be found in `nametag3.py` and in `examples`.
 
 ## Training NameTag 3
 
-The main NameTag 3 script `nametag3.py` can be used for training a custom
-corpus. It will do so when provided the parameters `--train_data`. Optionally,
-`--dev_data` and training hyperparameters can be provided.
-
-The input data file format is a vertical file, one token and its label(s) per
-line: labels separated by a `|`, columns separated by a tabulator; sentences
-delimited by newlines (such as the first and the fourth column in the well-known
-CoNLL-2003 shared task). A line containing `-DOCSTART-` with the label `O`, as
-seen in the CoNLL-2003 shared task data, can be used to mark document
-boundaries. Input examples can be found in `nametag3.py` and in `examples`.
-
-Example usage of multilingual traning for flat NER with a softmax classification
-head:
-
-```sh
-venv/bin/python3 nametag3.py \
-  --batch_size=8 \
-  --context_type="split_document" \
-  --corpus="english-CoNLL2003-conll,german-CoNLL2003-conll,spanish-CoNLL2002-conll,dutch-CoNLL2002-conll,czech-cnec2.0-conll,ukrainian-languk-conll" \
-  --decoding="classification" \
-  --dev_data=data/english-CoNLL2003-conll/dev.conll,data/german-CoNLL2003-conll/dev.conll,data/spanish-CoNLL2002-conll/dev.conll,data/dutch-CoNLL2002-conll/dev.conll,data/czech-cnec2.0-conll/dev.conll,data/ukrainian-languk-conll/dev.conll \
-  --dropout=0.5 \
-  --epochs=20 \
-  --evaluate_test_data \
-  --hf_plm="xlm-roberta-large" \
-  --learning_rate=2e-5 \
-  --logdir="logs/" \
-  --name="multilingual" \
-  --sampling="temperature" \
-  --save_best_checkpoint \
-  --test_data=data/english-CoNLL2003-conll/test.conll,data/german-CoNLL2003-conll/test.conll,data/spanish-CoNLL2002-conll/test.conll,data/dutch-CoNLL2002-conll/test.conll,data/czech-cnec2.0-conll/test.conll,data/ukrainian-languk-conll/test.conll \
-  --threads=4 \
-  --train_data=data/english-CoNLL2003-conll/train.conll,data/german-CoNLL2003-conll/train.conll,data/spanish-CoNLL2002-conll/train.conll,data/dutch-CoNLL2002-conll/train.conll,data/czech-cnec2.0-conll/train.conll,data/ukrainian-languk-conll/train.conll \
-  --warmup_epochs=1
-```
+Please refer to the [NameTag 3 Training
+Tutorial](https://ufal.mff.cuni.cz/nametag/3/tutorial) which will guide you
+through the process of training a NameTag 3 model tailored to your data.
 
 
 ## NameTag 3 Server
