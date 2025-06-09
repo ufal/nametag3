@@ -18,6 +18,7 @@
 # https://ufal.mff.cuni.cz/nametag/3/tutorial
 #
 # If you use this software, please give us credit by referencing
+# https://arxiv.org/abs/2506.05949:
 #
 # Straková Jana, Straka Milan: NameTag 3: A Tool and a Service for
 # Multilingual/Multitagset NER. In: Proceedings of the 63rd Annual Meeting of
