@@ -15,7 +15,7 @@ layer and nested NER by seq2seq decoder with hard attention.
 
 If you use this software, please give us credit by referencing https://arxiv.org/abs/2506.05949.
 
-@inproceedings{strakova2025nametag,
+@inproceedings{strakova-straka-2025-nametag,
   author    = {Jana Straková and Milan Straka},
   title     = {{NameTag 3: A Tool and a Service for Multilingual/Multitagset NER}},
   booktitle = {Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume: System Demonstrations)},
