@@ -13,7 +13,7 @@
 Implements both standard flat NER by fine-tuning with a softmax classification
 layer and nested NER by seq2seq decoder with hard attention.
 
-If you use this software, please give us credit by referencing Straková & Straka (2025):
+If you use this software, please give us credit by referencing https://arxiv.org/abs/2506.05949.
 
 @inproceedings{strakova2025nametag,
   author    = {Jana Straková and Milan Straka},
