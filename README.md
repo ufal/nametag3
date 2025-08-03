@@ -49,17 +49,26 @@ If you use this tool for scientific work, please give us credit by referencing [
 
 ## How to Cite NameTag 3
 
-If you use this software, please give us credit by referencing [**Straková & Straka (2025)**](https://arxiv.org/abs/2506.05949):
+If you use this software, please give us credit by referencing [**Straková & Straka (2025)**](https://aclanthology.org/2025.acl-demo.4/):
 
-Straková Jana, Straka Milan: [*NameTag 3: A Tool and a Service for Multilingual/Multitagset NER*](https://arxiv.org/abs/2506.05949). In: Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume: System Demonstrations), 2025. To appear.
+Jana Straková and Milan Straka. 2025. [*NameTag 3: A Tool and a Service for Multilingual/Multitagset NER*](https://aclanthology.org/2025.acl-demo.4/). In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 3: System Demonstrations), pages 31–39, Vienna, Austria. Association for Computational Linguistics.
 
 ```sh
 @inproceedings{strakova-straka-2025-nametag,
-  author    = {Jana Straková and Milan Straka},
-  title     = {{NameTag 3: A Tool and a Service for Multilingual/Multitagset NER}},
-  booktitle = {Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume: System Demonstrations)},
-  year      = {2025},
-  note      = {To appear}
+    title = "{N}ame{T}ag 3: A Tool and a Service for Multilingual/Multitagset {NER}",
+    author = "Strakov{\'a}, Jana  and
+      Straka, Milan",
+    editor = "Mishra, Pushkar  and
+      Muresan, Smaranda  and
+      Yu, Tao",
+    booktitle = "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 3: System Demonstrations)",
+    month = jul,
+    year = "2025",
+    address = "Vienna, Austria",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2025.acl-demo.4/",
+    pages = "31--39",
+    ISBN = "979-8-89176-253-4",
 }
 ```
 
