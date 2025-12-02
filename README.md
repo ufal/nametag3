@@ -87,7 +87,9 @@ seq2seq decoding head is the head proposed by [Straková et al. (2019)](https://
 
 ## Requirements
 
-The software has been developed and tested on Linux and is run from the commandline.
+The software has been developed and tested on Linux and is run from the command line.
+
+For systems with NVIDA GPUs, CUDA capability 7.0 or higher is required.
 
 
 ## NameTag 3 without Installation with curl

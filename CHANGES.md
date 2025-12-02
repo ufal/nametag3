@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgrade dependencies: torch 2.8.0.
 - Upgrade dependencies: transformers 4.53.0.
 
 ### Added
