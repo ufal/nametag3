@@ -1,5 +1,5 @@
 datasets~=3.0.1
-keras~=3.3.3
+keras~=3.12.0
 langcodes
 seqeval~=1.2.2
 tensorboard~=2.16.2
