@@ -464,6 +464,19 @@ class MacroAverageDevF1(keras.callbacks.Callback):
         logs["val_macro_avg_f1"] = np.sum(dev_scores) / len(dev_scores)
 
 
+class SafeSparseCategoricalCrossentropy(keras.losses.SparseCategoricalCrossentropy):
+    """Wraps SparseCategoricalCrossentropy and returns 0 for symbolic pre-run."""
+
+    def __init__(self, from_logits=False, ignore_class=None):
+        super().__init__(from_logits=from_logits, ignore_class=ignore_class)
+
+    def call(self, y_true, y_pred):
+        # Return 0 only if we're in symbolic pre-run (meta tensors)
+        if getattr(y_pred, "device", None) and y_pred.device.type == "meta":
+            return y_pred.new_zeros(())
+        return super().call(y_true, y_pred)
+
+
 #####################
 ### NameTag3Model ###
 #####################
@@ -505,7 +518,7 @@ class NameTag3Model(keras.Model):
                     training_batches * (self._args.epochs_frozen - self._args.warmup_epochs_frozen), # decay steps
                     warmup_target=self._args.learning_rate_frozen,  # target learning rate
                     warmup_steps=training_batches * self._args.warmup_epochs_frozen)), # warmup_steps
-                loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True, ignore_class=nametag3_dataset.BATCH_PAD),
+                loss=SafeSparseCategoricalCrossentropy(from_logits=True, ignore_class=nametag3_dataset.BATCH_PAD),
                 metrics=self._create_metrics())
         else:
             if training_batches * max(self._args.epochs - self._args.warmup_epochs, 0) <= 0:
@@ -519,7 +532,7 @@ class NameTag3Model(keras.Model):
 
             super().compile(
                 optimizer=keras.optimizers.Adam(learning_rate=schedule),
-                loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True, ignore_class=nametag3_dataset.BATCH_PAD),
+                loss=SafeSparseCategoricalCrossentropy(from_logits=True, ignore_class=nametag3_dataset.BATCH_PAD),
                 metrics=self._create_metrics())
 
     def postprocess(self, text):
