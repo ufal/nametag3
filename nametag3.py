@@ -13,14 +13,25 @@
 Implements both standard flat NER by fine-tuning with a softmax classification
 layer and nested NER by seq2seq decoder with hard attention.
 
-If you use this software, please give us credit by referencing https://arxiv.org/abs/2506.05949.
+If you use this software, please give us credit by referencing https://aclanthology.org/2025.acl-demo.4/.
+
+BibTeX:
 
 @inproceedings{strakova-straka-2025-nametag,
-  author    = {Jana Straková and Milan Straka},
-  title     = {{NameTag 3: A Tool and a Service for Multilingual/Multitagset NER}},
-  booktitle = {Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume: System Demonstrations)},
-  year      = {2025},
-  note      = {To appear}
+    title = "{N}ame{T}ag 3: A Tool and a Service for Multilingual/Multitagset {NER}",
+    author = "Strakov{\'a}, Jana  and
+      Straka, Milan",
+    editor = "Mishra, Pushkar  and
+      Muresan, Smaranda  and
+      Yu, Tao",
+    booktitle = "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 3: System Demonstrations)",
+    month = jul,
+    year = "2025",
+    address = "Vienna, Austria",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2025.acl-demo.4/",
+    pages = "31--39",
+    ISBN = "979-8-89176-253-4",
 }
 
 Installation:
