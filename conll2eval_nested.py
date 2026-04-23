@@ -44,9 +44,10 @@ def flush(ids, forms, tags):
 
 if __name__ == "__main__":
 
-    i = 0
+    line_number = 0
     ids, forms, tags = [], [], []
     for line in sys.stdin:
+        line_number += 1
         line = line.rstrip("\r\n")
 
         if not line:    # sentence ended, flush entities
@@ -56,33 +57,44 @@ if __name__ == "__main__":
             cols = line.split(SEP)
 
             if len(cols) != 2:
-                raise ValueError("conll2eval_nested.py: Incorrect number of fields in line {}".format(i))
+                raise ValueError("conll2eval_nested.py: Incorrect number of fields in line {}".format(line_number))
 
-            form, ne = line.split(SEP)
+            form, ne = cols
 
-            if ne == "O": # all entities ended, also flush entities
+            if ne == "O":   # all entities ended, flush entities
                 ids, forms, tags = flush(ids, forms, tags)
 
             else:
+                labels = ne.split("|")
 
-                for j, label in enumerate(ne.split("|")):
+                # Validate that 'O' is not mixed with other labels
+                if "O" in labels:
+                    raise ValueError("conll2eval_nested.py: 'O' mixed with other labels in line {}".format(line_number))
 
-                    if j < len(ids): # running entity
+                for j, label in enumerate(labels):
+
+                    if j < len(ids):    # running entity
 
                         # previous running entity ends here, print and insert new entity instead
                         if label.startswith("B-") or label.startswith("U-") or tags[j] != label[2:]:
                             print(ids[j] + SEP + tags[j] + SEP + forms[j])
-                            ids[j] = str(i)
+                            ids[j] = str(line_number)
                             forms[j] = form
 
                         # entity continues, append ids and forms
                         else:
-                            ids[j] += "," + str(i)
+                            ids[j] += "," + str(line_number)
                             forms[j] += " " + form
                         tags[j] = label[2:]
 
-                    else: # no running entities, new entity starts here, just append
-                        ids.append(str(i))
+                    else:   # no running entity at this depth, new entity starts here, just append
+                        ids.append(str(line_number))
                         forms.append(form)
                         tags.append(label[2:])
-        i += 1
+
+                # Flush and remove any running entities deeper than current label count
+                for j in range(len(labels), len(ids)):
+                    print(ids[j] + SEP + tags[j] + SEP + forms[j])
+                ids = ids[:len(labels)]
+                forms = forms[:len(labels)]
+                tags = tags[:len(labels)]
