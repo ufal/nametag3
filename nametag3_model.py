@@ -517,7 +517,8 @@ class NameTag3Model(keras.Model):
                     0. if self._args.warmup_epochs_frozen else self._args.learning_rate_frozen, # initial learning rate
                     training_batches * (self._args.epochs_frozen - self._args.warmup_epochs_frozen), # decay steps
                     warmup_target=self._args.learning_rate_frozen,  # target learning rate
-                    warmup_steps=training_batches * self._args.warmup_epochs_frozen)), # warmup_steps
+                    warmup_steps=training_batches * self._args.warmup_epochs_frozen),   # warmup_steps
+                    gradient_accumulation_steps=self._args.gradient_accumulation_steps),
                 loss=SafeSparseCategoricalCrossentropy(from_logits=True, ignore_class=nametag3_dataset.BATCH_PAD),
                 metrics=self._create_metrics())
         else:
@@ -531,7 +532,8 @@ class NameTag3Model(keras.Model):
                     warmup_steps=training_batches * self._args.warmup_epochs)
 
             super().compile(
-                optimizer=keras.optimizers.Adam(learning_rate=schedule),
+                optimizer=keras.optimizers.Adam(learning_rate=schedule,
+                                                gradient_accumulation_steps=self._args.gradient_accumulation_steps),
                 loss=SafeSparseCategoricalCrossentropy(from_logits=True, ignore_class=nametag3_dataset.BATCH_PAD),
                 metrics=self._create_metrics())
 

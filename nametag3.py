@@ -114,6 +114,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", default="10", type=int, help="Number of epochs.")
     parser.add_argument("--epochs_frozen", default=0, type=int, help="Number of pretraining epochs with frozen transformer.")
     parser.add_argument("--evaluate_test_data", default=False, action="store_true", help="If enabled, a second, tab-separated column with gold data is expected. By default, only one input column is expected.")
+    parser.add_argument("--gradient_accumulation_steps", default=None, type=int, help="If an int, model & optimizer variables will not be updated at every step; instead they will be updated every gradient_accumulation_steps steps, using the average value of the gradients since the last update.")
     parser.add_argument("--keep_original_casing", default=False, action="store_true", help="If enabled, turns truecasing off, i.e., keeps original casing in data.")
     parser.add_argument("--latent_dim", default=256, type=int, help="RNN decoder hidden dim.")
     parser.add_argument("--learning_rate", default="1e-4", type=float, help="Learning rate.")
