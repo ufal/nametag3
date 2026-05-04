@@ -514,6 +514,8 @@ class NameTag3Model(keras.Model):
         if frozen:
             if training_batches * max(self._args.epochs_frozen - self._args.warmup_epochs_frozen, 0) <= 0:
                 schedule = self._args.learning_rate_frozen
+            elif self._args.learning_rate_frozen_decay == "none":
+                schedule = self._args.learning_rate_frozen
             else:
                 schedule = keras.optimizers.schedules.CosineDecay(
                         0. if self._args.warmup_epochs_frozen else self._args.learning_rate_frozen, # initial learning rate
@@ -528,6 +530,8 @@ class NameTag3Model(keras.Model):
                 metrics=self._create_metrics())
         else:
             if training_batches * max(self._args.epochs - self._args.warmup_epochs, 0) <= 0:
+                schedule = self._args.learning_rate
+            elif self._args.learning_rate_decay == "none":
                 schedule = self._args.learning_rate
             else:
                 schedule = keras.optimizers.schedules.CosineDecay(
