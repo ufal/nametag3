@@ -512,11 +512,14 @@ class NameTag3Model(keras.Model):
         self._embeddings.trainable = not frozen
 
         if frozen:
-            schedule = keras.optimizers.schedules.CosineDecay(
-                    0. if self._args.warmup_epochs_frozen else self._args.learning_rate_frozen, # initial learning rate
-                    training_batches * (self._args.epochs_frozen - self._args.warmup_epochs_frozen), # decay steps
-                    warmup_target=self._args.learning_rate_frozen,  # target learning rate
-                    warmup_steps=training_batches * self._args.warmup_epochs_frozen)
+            if training_batches * max(self._args.epochs_frozen - self._args.warmup_epochs_frozen, 0) <= 0:
+                schedule = self._args.learning_rate_frozen
+            else:
+                schedule = keras.optimizers.schedules.CosineDecay(
+                        0. if self._args.warmup_epochs_frozen else self._args.learning_rate_frozen, # initial learning rate
+                        training_batches * (self._args.epochs_frozen - self._args.warmup_epochs_frozen), # decay steps
+                        warmup_target=self._args.learning_rate_frozen,  # target learning rate
+                        warmup_steps=training_batches * self._args.warmup_epochs_frozen)
 
             super().compile(
                 optimizer=keras.optimizers.Adam(learning_rate=schedule,
