@@ -1,6 +1,7 @@
 datasets~=3.0.1
 keras~=3.13.1
 langcodes
+language_data
 seqeval~=1.2.2
 tensorboard~=2.16.2
 torch~=2.8.0
