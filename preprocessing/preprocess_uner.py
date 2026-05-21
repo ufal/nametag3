@@ -50,7 +50,10 @@ if __name__ == "__main__":
         langcode = langcodes.find(args.language)
 
     for split in ["train", "dev", "test"]:
-        filename = os.path.join(args.source_path, "{}_{}-ud-{}.iob2".format(langcode, corpus_spec, split))
+        if split == "test" and corpus_spec == "legalnero":  # fix irregular filename
+            filename = os.path.join(args.source_path, "ro_legalnero.iob2")
+        else:
+            filename = os.path.join(args.source_path, "{}_{}-ud-{}.iob2".format(langcode, corpus_spec, split))
         output_filename = os.path.join(args.target_path, "{}.conll".format(split))
 
         if os.path.isfile(filename):
