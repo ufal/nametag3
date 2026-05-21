@@ -11,6 +11,11 @@ Norwegian Nynorsk, Portuguese, Russian, Serbian, Slovak, Swedish, Tagalog, and
 Ukrainian. It also delivers competitive results on Arabic, Dutch, German,
 Maghrebi, and Spanish, as of February 2025.
 
+NameTag 3 offers trained models for the following 17 languages: Arabic,
+Chinese, Croatian, Czech, Danish, Dutch, English, German, Maghrebi Arabic
+French, Norwegian Bokmål, Norwegian Nynorsk, Portuguese, Serbian, Slovak,
+Spanish, Swedish, and Ukrainian.
+
 NameTag 3 is a free software under [Mozilla Public License 2.0](htts://www.mozilla.org/MPL/2.0/), and the linguistic models are free for non-commercial use and distributed under [CC BY-NC-SA license](https://creativecommons.org/licenses/by-nc-sa/3.0/), although for some models the original data used to create the
 model may impose additional licensing conditions. NameTag is versioned using [Semantic Versioning](https://semver.org./).
 
