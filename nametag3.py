@@ -168,7 +168,8 @@ if __name__ == "__main__":
         logargs["corpus"]="multilingual"
 
     for key in ["checkpoint_filename", "dev_data", "default_tagset",
-                "keep_original_casing", "load_checkpoint", "logdir",
+                "keep_original_casing", "learning_rate_decay",
+                "learning_rate_frozen_decay", "load_checkpoint", "logdir",
                 "max_labels_per_token", "max_sentences_train", "sampling",
                 "save_best_checkpoint", "seed", "subword_masking", "tagsets",
                 "temperature", "test_data", "threads", "time", "train_data",
