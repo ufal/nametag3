@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Fixed
+
+- Added guard against words exploding into too many subwords.
+
 ## Added
 
 - Learning rate decay command-line argument.
