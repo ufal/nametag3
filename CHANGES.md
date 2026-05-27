@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## Fixed
+### Fixed
 
 - Added guard against words exploding into too many subwords.
 
-## Added
+### Added
 
 - Learning rate decay command-line argument.
 - Frozen pretraining warmup safeguard.
