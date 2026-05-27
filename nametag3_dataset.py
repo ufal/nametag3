@@ -16,6 +16,7 @@ import os
 import pickle
 import sys
 import time
+import unicodedata
 
 import keras
 import numpy as np
@@ -317,12 +318,14 @@ class NameTag3Dataset:
         return truecased
 
     def _tokenize(self, keep_original_casing=False):
+        MAX_CHARS_PER_WORD = 200
+        MAX_SUBWORDS_PER_WORD = 510
+
         input_ids, word_ids, docstarts, outputs = [], [], [], []
 
         start, end = 0, self._args.batch_size
         while start < len(self._forms):
-
-            batch_inputs = self._forms[start:end]
+            batch_inputs = [[unicodedata.normalize("NFC", form[:MAX_CHARS_PER_WORD]) for form in sentence] for sentence in self._forms[start:end]]
             batch_docstarts = self._docstarts[start:end]
             batch_outputs = self._label_ids[start:end]
             inputs = self._tokenizer(batch_inputs if keep_original_casing else self._truecase(batch_inputs), add_special_tokens=False, is_split_into_words=True)
@@ -351,6 +354,10 @@ class NameTag3Dataset:
                                                             word_ids[-1][-1] + 2 if word_ids[-1] else 1)
 
                         print("Word generated without corresponding token by the HF tokenizer, creating artificial token \"{}\". Word: \"{}\". Sentence: {}".format(self._tokenizer.unk_token, batch_inputs[s][word_index], batch_inputs[s]), file=sys.stderr, flush=True)
+
+                    # Check for words exploding past the subwords limit.
+                    if (token_span.end - token_span.start > MAX_SUBWORDS_PER_WORD):
+                        raise ValueError("Word {} of sentence {}: {} subwords exceed limit of {}".format(word_index, s, token_span.end - token_span.start, MAX_SUBWORDS_PER_WORD))
 
                     # Sentence length exceeded maximum length, start new
                     # context. +1 is for [SEP].
