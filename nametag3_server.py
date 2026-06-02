@@ -508,8 +508,14 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                     return request.respond_error("The Content-Length of payload is required.")
 
                 if content_length > request.server._server_args.max_request_size:
-                    return request.respond_error("The payload size is too large.")
-
+                    while content_length:
+                        read = request.rfile.read(min(content_length, 65536))
+                        content_length -= len(read) if read else content_length
+                    return request.respond_error("The request is too large (HTTP 413).\n"
+                                                 "\n"
+                                                 "Fix: Split your input on sentence boundaries into smaller\n"
+                                                 "parts and send each part as a separate request,\n"
+                                                 "then concatenate the results.\n", code=413)
                 # Content-Type
                 if url.path.startswith("/weblicht"):
                     try:

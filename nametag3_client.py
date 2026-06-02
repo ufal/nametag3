@@ -108,36 +108,10 @@ def perform_request(server, method, params={}):
             body = e.fp.read().decode("utf-8", errors="replace")
         except Exception:
             pass
-        if e.code == 413:
-            print("The server rejected the request as too large (HTTP 413).\n"
-                  "\n"
-                  "Fix: Split your input on sentence boundaries into smaller\n"
-                  "batches and send each batch as a separate request,\n"
-                  "then concatenate the results.\n", file=sys.stderr)
-        else:
-            print("An exception was raised during NameTag 3 '{}' REST request.\n"
-                  "The service returned HTTP {}:\n  {}".format(method, e.code, body),
-                  file=sys.stderr)
-        raise
-    except urllib.error.URLError as e:
-        # Covers BrokenPipeError, ConnectionResetError, DNS failures, refused
-        # connections, timeouts, etc. The original OSError is in e.reason.
-        reason = e.reason
-        size_mb = (len(request_data) / (1024 * 1024)) if request_data else 0
-        if isinstance(reason, (BrokenPipeError, ConnectionResetError)):
-            print("Connection to {} was closed by the peer\n"
-                  "while sending the request body ({:.1f} MiB).\n"
-                  "This almost always means the server enforces\n"
-                  "a maximum request size or an upload timeout,\n"
-                  "and your payload exceeded it.\n"
-                  "\n"
-                  "Fix: Split your input on sentence boundaries into smaller\n"
-                  "batches and send each batch as a separate request,\n"
-                  "then concatenate the results.\n".format(server, size_mb), file=sys.stderr)
-        else:
-            print("Network error talking to {}: {}".format(server, reason),
-                  file=sys.stderr)
-        raise
+        print("An exception was raised during NameTag 3 '{}' REST request.\n"
+              "The service returned HTTP {}:\n  {}".format(method, e.code, body),
+              file=sys.stderr)
+        sys.exit(1)
     except json.JSONDecodeError as e:
         print("Cannot parse the JSON response of NameTag 3 '{}' REST request.\n"
               "  {}".format(method, e.msg), file=sys.stderr)
