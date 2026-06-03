@@ -23,6 +23,7 @@ import numpy as np
 import seqeval.metrics
 import torch
 import transformers
+transformers.logging.set_verbosity_error()
 
 
 BATCH_PAD = -1
