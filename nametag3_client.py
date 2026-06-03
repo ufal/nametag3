@@ -18,6 +18,9 @@ By default, the script will call the NameTag 3 server. Do not send personal or
 private data unless you are authorized and comfortable with it being processed
 by NameTag 3.
 
+Large inputs may exceed the server's request size limit. If this happens, split
+into smaller parts and invoke the client per part.
+
 Example Usage:
 
 Get this script either by cloning the entire NameTag 3 repository:
@@ -75,7 +78,7 @@ import urllib.error
 import urllib.request
 
 
-def perform_request(server, method, params={}):
+def perform_request(server, method, params=None, timeout=300):
     if not params:
         request_headers, request_data = {}, None
     else:
@@ -97,7 +100,7 @@ def perform_request(server, method, params={}):
     try:
         with urllib.request.urlopen(urllib.request.Request(
             url="{}/{}".format(server, method), headers=request_headers, data=request_data
-        )) as request:
+        ), timeout=timeout) as request:
             return json.loads(request.read())
     except urllib.error.HTTPError as e:
         # Server replied with an HTTP error status (e.g. 413 Payload Too Large,
@@ -119,7 +122,7 @@ def perform_request(server, method, params={}):
 
 
 def list_models(args):
-    response = perform_request(args.service, "models")
+    response = perform_request(args.service, "models", timeout=args.timeout)
     if "models" in response:
         for model in response["models"]:
             print(model)
@@ -127,16 +130,16 @@ def list_models(args):
         print("Default model:", response["default_model"])
 
 
-def recognize(args, data):
+def recognize(args, payload):
     data = {
         "input": args.input,
         "output": args.output,
-        "data": data,
+        "data": payload,
     }
     if args.model is not None:
         data["model"] = args.model
 
-    response = perform_request(args.service, "recognize", data)
+    response = perform_request(args.service, "recognize", data, timeout=args.timeout)
     if "model" not in response or "result" not in response:
         raise ValueError("Cannot parse the NameTag 3 'recognize' REST request response.")
 
@@ -152,11 +155,12 @@ if __name__ == "__main__":
         "see https://lindat.mff.cuni.cz/services/udpipe/api-reference.php ."))
     parser.add_argument("inputs", nargs="*", type=str, help="Optional input files; stdin if not specified.")
     parser.add_argument("--list_models", default=False, action="store_true", help="List available models")
-    parser.add_argument("--input", default="untokenized", type=str, help="Input format")
+    parser.add_argument("--input", default="untokenized", choices=["untokenized", "vertical", "conllu"], help="Input format")
     parser.add_argument("--model", default=None, type=str, help="Model to use")
-    parser.add_argument("--output", default="xml", type=str, help="Output format")
+    parser.add_argument("--output", default="xml", choices=["xml", "vertical", "conll", "conllu-ne"], help="Output format")
     parser.add_argument("--outfile", default=None, type=str, help="Output path template; use {} as basename")
     parser.add_argument("--service", default="https://lindat.mff.cuni.cz/services/nametag/api", type=str, help="Service URL")
+    parser.add_argument("--timeout", default=300, type=float, help="Network timeout in seconds.")
     args = parser.parse_args()
 
     if args.list_models:
