@@ -17,6 +17,7 @@ import pickle
 import sys
 import time
 import unicodedata
+import warnings
 
 import keras
 import numpy as np
@@ -125,6 +126,7 @@ class NameTag3Dataset:
         self._seq2seq = args.decoding == "seq2seq"
         self._args = args
         self._tokenizer = tokenizer
+        self._tokenizer_model_max_length = self._resolve_max_length(tokenizer)
         self.tagset = tagset
         self._training = train_dataset == None
 
@@ -236,6 +238,30 @@ class NameTag3Dataset:
         if filename:
             print("Read {} sentences from \"{}\" in {:.2f} seconds".format(len(self._forms), filename, end_time-start_time), file=sys.stderr, flush=True)
 
+    def _resolve_max_length(self, tokenizer):
+        """Resolve model_max_length when undeclared in tokenizer."""
+
+        declared = tokenizer.model_max_length
+
+        # Declared and reasonable
+        if declared is not None and declared <= 10**6:
+            return declared
+
+        # Sentinel detected -> infer from tokenizer class name.
+        # Check RoBERTa-family before BERT-family, since "bert" is a
+        # substring of "roberta" / "camembert".
+        name = type(tokenizer).__name__.lower()
+        if any(k in name for k in ("xlmroberta", "roberta", "camembert")):
+            return 512
+        elif any(k in name for k in ("bert", "electra", "distilbert")):
+            return 512
+        elif any(k in name for k in ("longformer", "bigbird")):
+            return 4096
+        else:
+            warnings.warn("Tokenizer {} has no model_max_length set; "
+                          "defaulting to 512. Override explicitly if this is wrong.".format(type(tokenizer).__name__))
+            return 512
+
     def _split_document(self, input_ids, word_ids, docstarts, outputs):
         """Reorganize to max_context window splits instead sentences."""
 
@@ -246,7 +272,7 @@ class NameTag3Dataset:
             # Empty splits OR cannot fit entire sentence in current split OR
             # new document found => make new split.
             if len(input_ids_splits) == 0 \
-                    or len(input_ids_splits[-1]) + len(input_ids[s]) - 1 >= self._tokenizer.model_max_length \
+                    or len(input_ids_splits[-1]) + len(input_ids[s]) - 1 >= self._tokenizer_model_max_length \
                     or docstarts[s]:
                 if len(input_ids_splits):   # close previous split
                     input_ids_splits[-1].append(self._tokenizer.sep_token_id)
@@ -362,7 +388,7 @@ class NameTag3Dataset:
 
                     # Sentence length exceeded maximum length, start new
                     # context. +1 is for [SEP].
-                    if len(input_ids[-1]) + token_span.end - token_span.start + 1 >= self._tokenizer.model_max_length:
+                    if len(input_ids[-1]) + token_span.end - token_span.start + 1 >= self._tokenizer_model_max_length:
                         input_ids[-1].append(self._tokenizer.sep_token_id)
 
                         input_ids.append([self._tokenizer.cls_token_id])
@@ -460,7 +486,7 @@ class NameTag3Dataset:
                         context = []    # new document, drop context
 
                     context.extend(input_ids[s][1:-1])  # append sentence without [CLS] and [SEP] to context
-                    context = context[-self._tokenizer.model_max_length+3:]  # take last context, leave space for [CLS], [SEP] and [SEP]
+                    context = context[-self._tokenizer_model_max_length+3:]  # take last context, leave space for [CLS], [SEP] and [SEP]
 
                     # CLS + previous_context + SEP + sentence + SEP
                     inputs_with_context.append([self._tokenizer.cls_token_id])

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Resolve HF tokenizer model max length when undeclared.
+
 ### Changes
 
 - Polished client and improved server error processing on the client side.
