@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changes
+
+- Polished client and improved server error processing on the client side.
+- Added explicit server-side handling of oversized requests.
+- Silenced HF tokenizer warning (splitting is handled manually).
+
 ### Fixed
 
 - Added guard against words exploding into too many subwords.
