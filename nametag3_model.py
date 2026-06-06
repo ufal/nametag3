@@ -428,6 +428,8 @@ class PLMLayer(keras.layers.Layer):
         super().__init__()
 
         if load_checkpoint:
+            # Build empty architecture only; weights will be restored from the
+            # Keras checkpoint via model.load_weights() later.
             config = transformers.AutoConfig.from_pretrained(hf_plm)
             self._plm = transformers.AutoModel.from_config(config)
         else:
