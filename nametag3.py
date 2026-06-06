@@ -127,6 +127,8 @@ if __name__ == "__main__":
     parser.add_argument("--name", default=None, type=str, help="Experiment name.")
     parser.add_argument("--hf_plm", default=None, type=str, help="HF pre-trained model name.")
     parser.add_argument("--load_checkpoint", default=None, type=str, help="Load previously saved checkpoint.")
+    parser.add_argument("--lora", default=False, action="store_true", help="Parameter efficient fine-tuning with LoRA.")
+    parser.add_argument("--lora_rank", default=16, type=int, help="LoRA rank.")
     parser.add_argument("--postprocess", default=False, action="store_true", help="If enabled, performs a sanity check on the predicted test output to ensure entities are correctly nested and unique.")
     parser.add_argument("--remove_optimizer_from_checkpoint", default=False, action="store_true", help="If enabled, removes the optimizer from the loaded checkpoint, saves the checkpoint, and exits.")
     parser.add_argument("--sampling", default="concatenate", choices=["proportional", "uniform", "concatenate", "temperature", "temperature_logits", "temperature_probs"], help="Sampling strategy for multilingual datasets.")
@@ -139,6 +141,7 @@ if __name__ == "__main__":
     parser.add_argument("--test_data", default=None, type=str, help="Test data.")
     parser.add_argument("--time", default=False, action="store_true", help="Measure prediction time.")
     parser.add_argument("--train_data", default=None, type=str, help="Training data.")
+    parser.add_argument("--transformer_weights_dtype", type=str, default=None, choices=["float32", "float16", "bfloat16"], help="Override dtype for the transformer's pretrained weights. If unset, uses HuggingFace defaults (typically float32). Use 'bfloat16' for XL/XXL on memory-constrained GPUs.")
     parser.add_argument("--threads", default=4, type=int, help="Maximum number of threads to use.")
     parser.add_argument("--warmup_epochs", default=1, type=int, help="Number of warmup epochs.")
     parser.add_argument("--warmup_epochs_frozen", default=1, type=int, help="Number of warmup epochs for frozen pretraining.")
@@ -149,7 +152,8 @@ if __name__ == "__main__":
         with open("{}/options.json".format(args.load_checkpoint), mode="r") as options_file:
             train_args = argparse.Namespace(**json.load(options_file))
         for key in ["checkpoint_filename", "context_type", "decoding",
-                    "default_tagset", "hf_plm", "keep_original_casing"]:
+                    "default_tagset", "hf_plm", "keep_original_casing",
+                    "lora", "lora_rank"]:
             if hasattr(train_args, key):
                 args.__dict__[key] = train_args.__dict__[key]
 
@@ -170,10 +174,11 @@ if __name__ == "__main__":
     for key in ["checkpoint_filename", "dev_data", "default_tagset",
                 "keep_original_casing", "learning_rate_decay",
                 "learning_rate_frozen_decay", "load_checkpoint", "logdir",
-                "max_labels_per_token", "max_sentences_train", "sampling",
-                "save_best_checkpoint", "seed", "subword_masking", "tagsets",
-                "temperature", "test_data", "threads", "time", "train_data",
-                "warmup_epochs", "warmup_epochs_frozen"]:
+                "lora", "lora_rank", "max_labels_per_token",
+                "max_sentences_train", "sampling", "save_best_checkpoint",
+                "seed", "subword_masking", "tagsets", "temperature",
+                "test_data", "threads", "time", "train_data", "warmup_epochs",
+                "warmup_epochs_frozen"]:
         del logargs[key]
 
     # Include unique Slurm job id if running in Slurm-managed environment.

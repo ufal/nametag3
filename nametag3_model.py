@@ -37,8 +37,16 @@ import numpy as np
 import seqeval.metrics
 import torch
 import transformers
+from peft import LoraConfig, get_peft_model
 
 import nametag3_dataset
+
+
+DTYPE_MAP = {
+    "float32": torch.float32,
+    "float16": torch.float16,
+    "bfloat16": torch.bfloat16,
+}
 
 
 ##############################
@@ -424,16 +432,37 @@ class TagsetMaskLayer(keras.layers.Layer):
 class PLMLayer(keras.layers.Layer):
     """Custom Keras layer as a wrapper around PyTorch AutoModel."""
 
-    def __init__(self, hf_plm, tokenizer, load_checkpoint):
+    def __init__(self, hf_plm, tokenizer, load_checkpoint, lora=False, lora_rank=16, transformer_weights_dtype=None):
         super().__init__()
 
+        if transformer_weights_dtype is not None:
+            if transformer_weights_dtype not in DTYPE_MAP:
+                raise ValueError("Unknown transformer_weights_dtype={}. Expected one of {}.".format(transformer_weights_dtype, list(DTYPE_MAP)))
+            torch_dtype = DTYPE_MAP[transformer_weights_dtype]
+        else:
+            torch_dtype = None
+
+        if lora:
+            peft_config = LoraConfig(task_type="FEATURE_EXTRACTION",
+                                     r=lora_rank,
+                                     lora_alpha=lora_rank*2,
+                                     target_modules="all-linear",
+                                     lora_dropout=0.05,
+                                     bias="none")
+
+        # TODO: If we save and load only the LoRA adapters, not the entire HF
+        # Transformer, the condition will read
+        # if load_checkpoint and not lora:
+        # as the pretrained weights will be loaded from HF.
         if load_checkpoint:
             # Build empty architecture only; weights will be restored from the
             # Keras checkpoint via model.load_weights() later.
             config = transformers.AutoConfig.from_pretrained(hf_plm)
-            self._plm = transformers.AutoModel.from_config(config)
+            base_model = transformers.AutoModel.from_config(config, torch_dtype=torch_dtype)
         else:
-            self._plm = transformers.AutoModel.from_pretrained(hf_plm)
+            base_model = transformers.AutoModel.from_pretrained(hf_plm, torch_dtype=torch_dtype)
+
+        self._plm = get_peft_model(base_model, peft_config) if lora else base_model
 
     def call(self, inputs, training=False):
         return self._plm(keras.ops.maximum(inputs, 0), attention_mask=inputs > nametag3_dataset.BATCH_PAD).last_hidden_state
@@ -495,7 +524,10 @@ class NameTag3Model(keras.Model):
         # Layers
         self._embeddings = PLMLayer(args.hf_plm,
                                     tokenizer,
-                                    load_checkpoint=args.load_checkpoint)
+                                    load_checkpoint=args.load_checkpoint,
+                                    lora=getattr(args, "lora", False),
+                                    lora_rank=getattr(args, "lora_rank", 16),
+                                    transformer_weights_dtype=getattr(args, "transformer_weights_dtype", None))
         self._gathered = GatherLayer()
         self._dropout = keras.layers.Dropout(args.dropout)
 
