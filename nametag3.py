@@ -124,6 +124,7 @@ if __name__ == "__main__":
     parser.add_argument("--logdir", default="logs", type=str, help="Logdir name.")
     parser.add_argument("--max_sentences_train", default=None, type=int, help="Limit number of training sentences (for debugging).")
     parser.add_argument("--max_labels_per_token", default=5, type=int, help="Maximum labels per token.")
+    parser.add_argument("--max_tokenizer_length", default=None, type=int, help="Overrides the HuggingFace tokenizer model_max_length.")
     parser.add_argument("--name", default=None, type=str, help="Experiment name.")
     parser.add_argument("--hf_plm", default=None, type=str, help="HF pre-trained model name.")
     parser.add_argument("--load_checkpoint", default=None, type=str, help="Load previously saved checkpoint.")
@@ -153,7 +154,7 @@ if __name__ == "__main__":
             train_args = argparse.Namespace(**json.load(options_file))
         for key in ["checkpoint_filename", "context_type", "decoding",
                     "default_tagset", "hf_plm", "keep_original_casing",
-                    "lora", "lora_rank"]:
+                    "lora", "lora_rank", "max_tokenizer_length"]:
             if hasattr(train_args, key):
                 args.__dict__[key] = train_args.__dict__[key]
 
@@ -175,10 +176,10 @@ if __name__ == "__main__":
                 "keep_original_casing", "learning_rate_decay",
                 "learning_rate_frozen_decay", "load_checkpoint", "logdir",
                 "lora", "lora_rank", "max_labels_per_token",
-                "max_sentences_train", "sampling", "save_best_checkpoint",
-                "seed", "subword_masking", "tagsets", "temperature",
-                "test_data", "threads", "time", "train_data", "warmup_epochs",
-                "warmup_epochs_frozen"]:
+                "max_sentences_train", "max_tokenizer_length", "sampling",
+                "save_best_checkpoint", "seed", "subword_masking", "tagsets",
+                "temperature", "test_data", "threads", "time", "train_data",
+                "warmup_epochs", "warmup_epochs_frozen"]:
         del logargs[key]
 
     # Include unique Slurm job id if running in Slurm-managed environment.

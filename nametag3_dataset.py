@@ -126,7 +126,8 @@ class NameTag3Dataset:
         self._seq2seq = args.decoding == "seq2seq"
         self._args = args
         self._tokenizer = tokenizer
-        self._tokenizer_model_max_length = self._resolve_max_length(tokenizer)
+        self._tokenizer_model_max_length = self._resolve_max_length(tokenizer,
+                                                                    max_tokenizer_length=getattr(args, "max_tokenizer_length", None))
         self.tagset = tagset
         self._training = train_dataset == None
 
@@ -238,10 +239,16 @@ class NameTag3Dataset:
         if filename:
             print("Read {} sentences from \"{}\" in {:.2f} seconds".format(len(self._forms), filename, end_time-start_time), file=sys.stderr, flush=True)
 
-    def _resolve_max_length(self, tokenizer):
-        """Resolve model_max_length when undeclared in tokenizer."""
+    def _resolve_max_length(self, tokenizer, max_tokenizer_length=None):
+        """Resolve model_max_length when undeclared or user-requested."""
 
         declared = tokenizer.model_max_length
+
+        # Resolve user-requested max tokenizer length
+        if max_tokenizer_length is not None:
+            if declared and max_tokenizer_length > declared:
+                raise ValueError("Requested --max_tokenizer_length={} is greater than HF tokenizer maximum length={}".format(max_tokenizer_length, declared))
+            return max_tokenizer_length
 
         # Declared and reasonable
         if declared is not None and declared <= 10**6:
