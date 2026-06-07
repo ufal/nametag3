@@ -107,6 +107,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_filename", default="checkpoint.weights.h5", type=str, help="Checkpoint filename.")
     parser.add_argument("--context_type", default="split_document", choices=["max_context", "sentence", "document", "split_document"], help="Context type to add to sentence.")
     parser.add_argument("--corpus", default=None, type=str, help="Corpus name. If given for training, the corpus name will be saved with the model.")
+    parser.add_argument("--debug_memory", default=False, action="store_true", help="If enabled, GPU memory is traced during training for debugging.")
     parser.add_argument("--decoding", default="classification", choices=["classification", "seq2seq"], help="Decoding head.")
     parser.add_argument("--default_tagset", default="conll", choices=["conll", "uner", "onto"], help="Default tagset if --tagsets used during training. Use --default_tagset during training to save with the model as a fallback tagset for dev/test data predicted later without specified --tagsets.")
     parser.add_argument("--dev_data", default=None, type=str, help="Dev data.")
@@ -172,14 +173,15 @@ if __name__ == "__main__":
     if args.corpus and len(args.corpus.split(",")) > 1:
         logargs["corpus"]="multilingual"
 
-    for key in ["checkpoint_filename", "dev_data", "default_tagset",
-                "keep_original_casing", "learning_rate_decay",
-                "learning_rate_frozen_decay", "load_checkpoint", "logdir",
-                "lora", "lora_rank", "max_labels_per_token",
-                "max_sentences_train", "max_tokenizer_length", "sampling",
-                "save_best_checkpoint", "seed", "subword_masking", "tagsets",
-                "temperature", "test_data", "threads", "time", "train_data",
-                "warmup_epochs", "warmup_epochs_frozen"]:
+    for key in ["checkpoint_filename", "debug_memory", "dev_data",
+                "default_tagset", "keep_original_casing",
+                "learning_rate_decay", "learning_rate_frozen_decay",
+                "load_checkpoint", "logdir", "lora", "lora_rank",
+                "max_labels_per_token", "max_sentences_train",
+                "max_tokenizer_length", "sampling", "save_best_checkpoint",
+                "seed", "subword_masking", "tagsets", "temperature",
+                "test_data", "threads", "time", "train_data", "warmup_epochs",
+                "warmup_epochs_frozen"]:
         del logargs[key]
 
     # Include unique Slurm job id if running in Slurm-managed environment.
