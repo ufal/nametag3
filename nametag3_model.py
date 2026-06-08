@@ -88,10 +88,10 @@ class MemTraceCallback(keras.callbacks.Callback):
               flush=True)
 
     def on_epoch_begin(self, epoch, logs=None):
-        self._log(f"epoch_{epoch}_begin")
+        self._log(f"epoch_{epoch+1}_begin")
 
     def on_epoch_end(self, epoch, logs=None):
-        self._log(f"epoch_{epoch}_end")
+        self._log(f"epoch_{epoch+1}_end")
 
     def on_train_batch_end(self, batch, logs=None):
         if batch % 100 == 0:
