@@ -104,6 +104,7 @@ if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size", default=64, type=int, help="Batch size.")
+    parser.add_argument("--best_weights_device", default="gpu", choices=["gpu", "cpu", "disk"], help="Early stopping best weights temporary storage device.")
     parser.add_argument("--checkpoint_filename", default="checkpoint.weights.h5", type=str, help="Checkpoint filename.")
     parser.add_argument("--context_type", default="split_document", choices=["max_context", "sentence", "document", "split_document"], help="Context type to add to sentence.")
     parser.add_argument("--corpus", default=None, type=str, help="Corpus name. If given for training, the corpus name will be saved with the model.")
@@ -173,8 +174,8 @@ if __name__ == "__main__":
     if args.corpus and len(args.corpus.split(",")) > 1:
         logargs["corpus"]="multilingual"
 
-    for key in ["checkpoint_filename", "debug_memory", "dev_data",
-                "default_tagset", "keep_original_casing",
+    for key in ["best_weights_device", "checkpoint_filename", "debug_memory",
+                "dev_data", "default_tagset", "keep_original_casing",
                 "learning_rate_decay", "learning_rate_frozen_decay",
                 "load_checkpoint", "logdir", "lora", "lora_rank",
                 "max_labels_per_token", "max_sentences_train",

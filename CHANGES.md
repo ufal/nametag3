@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Transformer weights dtype.
 - User-requested max tokenizer length (overrides HF max model length).
 - GPU memory tracking for memory debugging.
+- Added options for early stopping best weights storage device.
 
 ### Added
 
