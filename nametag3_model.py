@@ -278,38 +278,68 @@ class TorchTensorBoardCallback(keras.callbacks.Callback):
             self.add_logs("val", {k[4:]: v for k, v in logs.items() if k.startswith("val_")}, epoch + 1)
 
 
-class RestoreBestWeightsCallback(keras.callbacks.Callback):
+class CheckpointAndRestoreBestWeightsCallback(keras.callbacks.Callback):
+    """Handles checkpoint saving and best checkpoint selection by dev data."""
 
-    def __init__(self, objective="val_macro_avg_f1", best_weights_device="gpu",
-                 checkpoint_path=None, delete_checkpoint_on_end=False):
-        self._best = None
-        self._best_epoch = None
+    def __init__(self, objective="val_macro_avg_f1", mode="max", best_weights_device="gpu",
+                 checkpoint_path=None, save_best_checkpoint=False, delete_checkpoint_on_end=False):
         self._objective = objective
         self._best_weights_device = best_weights_device
         self._checkpoint_path = checkpoint_path
+        self._save_best_checkpoint = save_best_checkpoint
         self._delete_checkpoint_on_end = delete_checkpoint_on_end
+
+        self._best = None
+        self._best_epoch = None
         self._best_weights = None
 
         if self._best_weights_device not in ("gpu", "cpu", "disk"):
             raise ValueError("Unknown best_weights_device '{}', expected one of 'gpu', 'cpu', 'disk'".format(self._best_weights_device))
 
-        if self._best_weights_device == "disk" and self._checkpoint_path is None:
-            raise ValueError("best_weights_device='disk' requires a checkpoint_path")
+        self._saves_to_disk = self._save_best_checkpoint or self._best_weights_device == "disk"
+        if self._saves_to_disk and self._checkpoint_path is None:
+            raise ValueError("save_best_checkpoint=True or best_weights_device='disk' requires a checkpoint_path")
+
+        if mode == "max":
+            self._is_better = lambda current, best: current > best
+        elif mode == "min":
+            self._is_better = lambda current, best: current < best
+        else:
+            raise ValueError("Unknown mode '{}', expected one of 'max', 'min'".format(mode))
+
+    def on_train_begin(self, logs=None):
+        if self._saves_to_disk:
+            os.makedirs(os.path.dirname(self._checkpoint_path), exist_ok=True)
 
     def on_epoch_end(self, epoch, logs):
         metric = logs[self._objective]
-        if self._best is None or metric > self._best:
-            self._best = metric
-            self._best_epoch = epoch
+        if self._best is not None and not self._is_better(metric, self._best):
+            return
 
-            if self._best_weights_device == "gpu":
-                # Snapshot stays on the GPU (fast restore, costs GPU memory).
-                self._best_weights = [v.value.detach().clone() for v in self.model.weights]
-            elif self._best_weights_device == "cpu":
-                # .to("cpu") copies straight to host RAM with no intermediate
-                # GPU allocation, so there is no GPU memory peak.
-                self._best_weights = [v.value.detach().to("cpu") for v in self.model.weights]
-            # "disk": handled by Keras ModelCheckpoint, nothing to store here.
+        previous_best = self._best
+        self._best = metric
+        self._best_epoch = epoch
+
+        if previous_best is None:
+            print("Epoch {}: {} improved from None to {:.5f}, remembering best weights on requested device '{}'".format(epoch+1, self._objective, metric, self._best_weights_device), file=sys.stderr, flush=True)
+        else:
+            print("Epoch {}: {} improved from {:.5f} to {:.5f}, remembering best weights on requested device '{}'".format(epoch+1, self._objective, previous_best, metric, self._best_weights_device), file=sys.stderr, flush=True)
+
+        # Snapshot for end-of-training restore.
+        if self._best_weights_device == "gpu":
+            self._best_weights = [v.value.detach().clone() for v in self.model.weights]
+        elif self._best_weights_device == "cpu":
+            self._best_weights = [v.value.detach().to("cpu") for v in self.model.weights]
+        elif self._best_weights_device == "disk":
+            self.model.save_weights(self._checkpoint_path)
+
+        # Persist to disk if requested; the "disk" snapshot already wrote the file.
+        if self._save_best_checkpoint and self._best_weights_device != "disk":
+            self.model.save_weights(self._checkpoint_path)
+
+        # Announce the persisted artifact whenever one exists on disk this epoch.
+        if self._save_best_checkpoint:
+            print("Epoch {}: Model checkpoint saved to '{}'".format(epoch+1, self._checkpoint_path), file=sys.stderr, flush=True)
 
     def on_train_end(self, logs):
         if self._best_epoch is None:
@@ -317,24 +347,34 @@ class RestoreBestWeightsCallback(keras.callbacks.Callback):
             # nothing to restore.
             return
 
-        print("Restoring weights from the end of best epoch {} with maximum {}: {:.4f}".format(self._best_epoch + 1, self._objective, self._best), file=sys.stderr, flush=True)
+        print("Restoring best weights from epoch {} ({}={:.5f})".format(self._best_epoch + 1, self._objective, self._best), file=sys.stderr, flush=True)
+        if self._save_best_checkpoint:
+            print("Model checkpoint from epoch {} saved to '{}'".format(self._best_epoch+1, self._checkpoint_path), file=sys.stderr, flush=True)
 
         if self._best_weights_device in ("gpu", "cpu"):
-            # Assign each snapshot tensor back into the corresponding variable.
-            # variable.assign handles moving the tensor back to the right device.
             for variable, value in zip(self.model.weights, self._best_weights):
                 variable.assign(value)
         elif self._best_weights_device == "disk":
             self.model.load_weights(self._checkpoint_path)
-            if self._delete_checkpoint_on_end:
-                self._remove_checkpoint()
+
+        if self._best_weights_device == "disk" and self._delete_checkpoint_on_end:
+            self._remove_checkpoint()
 
     def _remove_checkpoint(self):
+        # Remove the checkpoint itself ('checkpoint.weights.h5').
         try:
             if os.path.exists(self._checkpoint_path):
                 os.remove(self._checkpoint_path)
         except OSError as e:
             warnings.warn("Could not delete temporary checkpoint '{}': {}".format(self._checkpoint_path, e))
+
+        # Remove the checkpoint directory ('best_weights').
+        checkpoint_dir = os.path.dirname(self._checkpoint_path)
+        try:
+            if os.path.isdir(checkpoint_dir):
+                os.rmdir(checkpoint_dir)
+        except OSError as e:
+            warnings.warn("Could not delete temporary checkpoint directory '{}': {}".format(checkpoint_dir, e))
 
 
 class NestedF1Score(keras.metrics.Metric):
@@ -753,33 +793,30 @@ class NameTag3Model(keras.Model):
 
         callbacks.append(TorchTensorBoardCallback(self._args.logdir))
 
-        checkpoint_path = os.path.join(self._args.logdir, "model", self._args.checkpoint_filename)
+        # The persisted model lives in "model/", the throwaway best-weights
+        # snapshot (disk device without save_best_checkpoint) lives in
+        # "best_weights/".
+        checkpoint_subdir = "model" if save_best_checkpoint else "best_weights"
+        checkpoint_path = os.path.join(self._args.logdir, checkpoint_subdir, self._args.checkpoint_filename)
 
-        if save_best_checkpoint or self._args.best_weights_device == "disk":
-            os.makedirs("{}/model".format(self._args.logdir), exist_ok=True)
+        if save_best_checkpoint:
+            # Directory for the persisted model and its options.json (the
+            # weights themselves are written by the callback).
+            model_dir = os.path.dirname(checkpoint_path)
+            os.makedirs(model_dir, exist_ok=True)
+            print("Checkpoint will be saved to logdir: {}".format(model_dir), file=sys.stderr, flush=True)
 
-            if save_best_checkpoint:
-                print("Checkpoint will be saved to logdir: {}/model".format(self._args.logdir),
-                                                                            file=sys.stderr, flush=True)
-
-                # Save model training arguments
-                with open("{}/model/options.json".format(self._args.logdir), mode="w") as options_file:
-                    json.dump(vars(self._args), options_file, sort_keys=True)
-
-            if self._model_checkpoint is None:
-                self._model_checkpoint = keras.callbacks.ModelCheckpoint(checkpoint_path,
-                                                                         save_best_only=True,
-                                                                         save_weights_only=True,
-                                                                         monitor="val_macro_avg_f1",
-                                                                         mode="max",
-                                                                         verbose=2 if save_best_checkpoint else 0)
-                callbacks.append(self._model_checkpoint)
+            # Save model training arguments
+            with open(os.path.join(model_dir, "options.json"), mode="w") as options_file:
+                json.dump(vars(self._args), options_file, sort_keys=True)
 
         if dev_collection:
-            callbacks.append(RestoreBestWeightsCallback(objective="val_macro_avg_f1",
-                                                        best_weights_device=self._args.best_weights_device,
-                                                        checkpoint_path=checkpoint_path,
-                                                        delete_checkpoint_on_end=(self._args.best_weights_device == "disk" and not save_best_checkpoint)))
+            callbacks.append(CheckpointAndRestoreBestWeightsCallback(objective="val_macro_avg_f1",
+                                                                     mode="max",
+                                                                     best_weights_device=self._args.best_weights_device,
+                                                                     checkpoint_path=checkpoint_path,
+                                                                     save_best_checkpoint=save_best_checkpoint,
+                                                                     delete_checkpoint_on_end=(self._args.best_weights_device == "disk" and not save_best_checkpoint)))
 
         super().fit(train_collection.dataloader,
                     validation_data=dev_collection.dataloader if dev_collection else None,

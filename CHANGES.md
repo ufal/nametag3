@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Refactored best model checkpoint saving.
+
 ### Added
 
 - LoRA.
@@ -19,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Resolve HF tokenizer model max length when undeclared.
 
-### Changes
+### Changed
 
 - Polished client and improved server error processing on the client side.
 - Added explicit server-side handling of oversized requests.
