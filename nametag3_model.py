@@ -80,9 +80,9 @@ class MemTraceCallback(keras.callbacks.Callback):
     def _log(self, tag):
         if not self.enabled:
             return
-        a = torch.cuda.memory_allocated() / 1e9
-        r = torch.cuda.memory_reserved() / 1e9
-        total = torch.cuda.get_device_properties(0).total_memory / 1e9
+        a = torch.cuda.memory_allocated() / (1<<30)
+        r = torch.cuda.memory_reserved() / (1<<30)
+        total = torch.cuda.get_device_properties(0).total_memory / (1<<30)
         pct = 100 * r / total
         print(f"[MEM {tag}] alloc={a:.2f} GB  reserved={r:.2f}/{total:.0f} GB ({pct:.0f}%)",
               flush=True)
@@ -95,9 +95,9 @@ class MemTraceCallback(keras.callbacks.Callback):
 
     def on_train_batch_end(self, batch, logs=None):
         if batch % 100 == 0:
-            a = torch.cuda.memory_allocated() / 1e9
-            r = torch.cuda.memory_reserved() / 1e9
-            m = torch.cuda.max_memory_allocated() / 1e9
+            a = torch.cuda.memory_allocated() / (1<<30)
+            r = torch.cuda.memory_reserved() / (1<<30)
+            m = torch.cuda.max_memory_allocated() / (1<<30)
             print(f"[MEM batch_{batch}] alloc={a:.2f} reserved={r:.2f} peak={m:.2f}", flush=True)
             torch.cuda.reset_peak_memory_stats()
 
