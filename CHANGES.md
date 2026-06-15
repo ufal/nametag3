@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgrade dependencies: tensorboard 2.20.0.
+
+### Changed
+
 - Refactored best model checkpoint saving.
 
 ### Added

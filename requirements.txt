@@ -4,7 +4,7 @@ langcodes
 language_data
 peft
 seqeval~=1.2.2
-tensorboard~=2.16.2
+tensorboard~=2.20.0
 torch~=2.8.0
 transformers~=4.53.0
 ufal.morphodita~=1.11.2.1
