@@ -89,6 +89,7 @@ import numpy as np
 import torch
 import transformers
 
+from nametag3_dataset import NameTag3Dataset
 from nametag3_dataset_collection import NameTag3DatasetCollection
 from nametag3_model import nametag3_model_factory
 
@@ -269,7 +270,7 @@ if __name__ == "__main__":
 
             # Postprocess if --postprocess enabled.
             if args.postprocess:
-                predicted_output = model.postprocess(predicted_output)
+                predicted_output = NameTag3Dataset.postprocess(predicted_output)
 
             with open(os.path.join(args.logdir, predictions_filename), "w", encoding="utf-8") as predictions_file:
                 print(predicted_output, file=predictions_file, end="")

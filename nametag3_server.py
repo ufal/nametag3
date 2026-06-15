@@ -92,6 +92,7 @@ os.environ.setdefault("KERAS_BACKEND", "torch")
 import torch
 import transformers
 
+from nametag3_dataset import NameTag3Dataset
 from nametag3_dataset_collection import NameTag3DatasetCollection
 from nametag3_model import nametag3_model_factory
 import ufal.udpipe
@@ -198,10 +199,6 @@ class Models:
             print("Request {:.2f}ms,".format(1000 * (time_end - time_start)), file=sys.stderr, flush=True)
 
 
-        def postprocess(self, text):
-            return self.model.postprocess(text)
-
-
         @property
         def args(self):
             return self._args
@@ -228,8 +225,9 @@ class Models:
                 else:
                     in_sentence = True
 
-                    # This will work for properly nested entities,
-                    # hence model.postprocess is important before conll_to_conllu.
+                    # This will work for properly nested entities, hence
+                    # NameTag3Dataset.postprocess() is important before
+                    # conll_to_conllu.
                     if encoding == "conllu-ne":
                         nes_encoded = []
                         words_in_token = 1
@@ -331,8 +329,9 @@ class Models:
             """Converts postprocessed (!) CoNLL output of the model.
 
             This method expects correct bracketing and the IOB2 format of the
-            encoded named entities. Hence, postprocessing (model.postprocess)
-            of the model output is important before calling this method.
+            encoded named entities. Hence, postprocessing
+            (NameTag3Dataset.postprocess()) of the model output is important
+            before calling this method.
 
             Rules for whitespaces around the <sentence>, <token> and <ne> XML
             elements:
@@ -381,8 +380,9 @@ class Models:
                     form = cols[0]
                     ne = cols[1] if len(cols) == 2 else "O"
 
-                    # This will work for properly nested entities,
-                    # hence model.postprocess is important before conll_to_xml.
+                    # This will work for properly nested entities, hence
+                    # NameTag3Dataset.postprocess() is important before
+                    # conll_to_xml.
                     opening_tags = []
                     if ne == "O":                           # all entities ended
                         for i in range(len(open_labels)):   # close all open entities
@@ -657,7 +657,7 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
                             # Finalize the batch output string by joining the sentence strings.
                             batch_output = "".join(batch_output)
 
-                            batch_output = model.postprocess(batch_output)
+                            batch_output = NameTag3Dataset.postprocess(batch_output)
                             if output_param == "vertical":
                                 batch_output, n_tokens_in_batches = model.conll_to_vertical(batch_output, n_tokens_in_batches)
                             if output_param == "conllu-ne":

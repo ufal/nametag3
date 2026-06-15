@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Moved postprocess() from NameTag3Model to NameTag3Dataset.
+
+### Changed
+
 - Upgrade dependencies: tensorboard 2.20.0.
 
 ### Changed

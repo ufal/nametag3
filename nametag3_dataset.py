@@ -602,3 +602,74 @@ class NameTag3Dataset:
                 if tag_with_tagset in all_tags:
                     index = all_tags.index(tag_with_tagset)
                     self._tagset_mask[index] = 0.
+
+    @staticmethod
+    def postprocess(text):
+        """Postprocesses the predicted text output.
+
+        Guarantees correctly bracketed and unique NEs in the BIO (IOB-2)
+        format.
+        """
+
+        forms, previous_labels, starts = [], [], []
+        entities = dict()   # (start, end, label)
+
+        for i, line in enumerate(text.split("\n")):
+            if not line:    # end of sentence
+                forms.append("")
+                for j in range(len(previous_labels)): # close entities
+                    entities[(starts[j], i, previous_labels[j][2:])] = j
+                previous_labels, starts = [], []
+            else:
+                form, ne = line.split("\t")
+                if ne == "O":   # all entities ended
+                    forms.append(form)
+                    for j in range(len(previous_labels)): # close entities
+                        entities[(starts[j], i, previous_labels[j][2:])] = j
+                    previous_labels, starts = [], []
+                else:
+                    labels = ne.split("|")
+                    for j in range(len(labels)):
+                        if labels[j] == "O": # bad decoder output, "O" should be alone
+                            labels = labels[:j]
+                            break
+                        if j < len(previous_labels):
+                            if labels[j].startswith("B-") or previous_labels[j][2:] != labels[j][2:]:
+                                # Previous entity was ended by current starting
+                                # entity, forcing end of all its nested
+                                # entities (following in the previous list):
+                                for k in range(j, len(previous_labels)): # close entities
+                                    entities[(starts[k], i, previous_labels[k][2:])] = k
+                                previous_labels = previous_labels[:j]
+                                starts = starts[:j]
+                                starts.append(i)
+                        else: # new entity starts here
+                            starts.append(i)
+                    forms.append(form)
+                    if len(labels) < len(previous_labels):  # close entities
+                        for j in range(len(labels), len(previous_labels)):
+                            entities[(starts[j], i, previous_labels[j][2:])] = j
+                    previous_labels = labels
+                    starts = starts[:len(labels)]
+
+        # Sort entities
+        entities = sorted(entities.items(), key=lambda x: (x[0][0], -x[0][1], x[1]))
+
+        # Reconstruct the CoNLL output with the entities set,
+        # removing duplicates and changing IOB -> BIO
+        labels = [ [] for _ in range(len(forms)) ]
+        for (start, end, label), _ in entities:
+            for i in range(start, end):
+                labels[i].append(("B-" if i == start else "I-") + label)
+
+        output = []
+        for form, label in zip(forms, labels):
+            if form:
+                output.append("{}\t{}\n".format(form, "|".join(label) if label else "O"))
+            else:
+                output.append("\n")
+
+        if output and output[-1] == "\n":
+            output.pop()
+
+        return "".join(output)
