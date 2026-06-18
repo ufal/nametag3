@@ -14,6 +14,7 @@
 import io
 import os
 import pickle
+import subprocess
 import sys
 import time
 import unicodedata
@@ -552,9 +553,9 @@ class NameTag3Dataset:
 
         # Run the eval script
         eval_script = self._eval_script()
-        print("\"{}\" data of corpus \"{}\" will be evaluated with an external script \"{}\"".format(dataset_type, self._corpus, eval_script), file=sys.stderr, flush=True)
-        command = "cd {} && ../../{} {} {} {}".format(logdir, eval_script, dataset_type, self._filename, predictions_filename)
-        os.system(command)
+        eval_script_abs = os.path.abspath(eval_script)
+        print("\"{}\" data of corpus \"{}\" will be evaluated with an external script \"{}\"".format(dataset_type, self._corpus, eval_script_abs), file=sys.stderr, flush=True)
+        subprocess.run([eval_script_abs, dataset_type, self._filename, predictions_filename], cwd=logdir, check=True)
 
         # Parse the eval script output
         f1 = None
