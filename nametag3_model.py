@@ -285,8 +285,8 @@ class CheckpointAndRestoreBestWeightsCallback(keras.callbacks.Callback):
         self._best_epoch = None
         self._best_weights = None
 
-        if self._best_weights_device not in ("gpu", "cpu", "disk"):
-            raise ValueError("Unknown best_weights_device '{}', expected one of 'gpu', 'cpu', 'disk'".format(self._best_weights_device))
+        if self._best_weights_device not in ("auto", "gpu", "cpu", "disk"):
+            raise ValueError("Unknown best_weights_device '{}', expected one of 'auto', 'gpu', 'cpu', 'disk'".format(self._best_weights_device))
 
         self._saves_to_disk = self._save_best_checkpoint or self._best_weights_device == "disk"
         if self._saves_to_disk and self._checkpoint_path is None:
@@ -318,12 +318,11 @@ class CheckpointAndRestoreBestWeightsCallback(keras.callbacks.Callback):
             print("Epoch {}: {} improved from {:.5f} to {:.5f}, remembering best weights on requested device '{}'".format(epoch+1, self._objective, previous_best, metric, self._best_weights_device), file=sys.stderr, flush=True)
 
         # Snapshot for end-of-training restore.
-        if self._best_weights_device == "gpu":
-            self._best_weights = [v.value.detach().clone() for v in self.model.weights]
-        elif self._best_weights_device == "cpu":
-            self._best_weights = [v.value.detach().to("cpu") for v in self.model.weights]
-        elif self._best_weights_device == "disk":
+        if self._best_weights_device == "disk":
             self.model.save_weights(self._checkpoint_path)
+        else:
+            target = "cpu" if self._best_weights_device == "cpu" else None
+            self._best_weights = [ v.value.detach().to(target, copy=True) if target else v.value.detach().clone() for v in self.model.weights ]
 
         # Persist to disk if requested; the "disk" snapshot already wrote the file.
         if self._save_best_checkpoint and self._best_weights_device != "disk":
@@ -343,7 +342,7 @@ class CheckpointAndRestoreBestWeightsCallback(keras.callbacks.Callback):
         if self._save_best_checkpoint:
             print("Model checkpoint from epoch {} saved to '{}'".format(self._best_epoch+1, self._checkpoint_path), file=sys.stderr, flush=True)
 
-        if self._best_weights_device in ("gpu", "cpu"):
+        if self._best_weights_device in ("auto", "gpu", "cpu"):
             for variable, value in zip(self.model.weights, self._best_weights):
                 variable.assign(value)
         elif self._best_weights_device == "disk":

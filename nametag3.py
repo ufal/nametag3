@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size", default=64, type=int, help="Batch size.")
-    parser.add_argument("--best_weights_device", default="gpu", choices=["gpu", "cpu", "disk"], help="Early stopping best weights temporary storage device.")
+    parser.add_argument("--best_weights_device", default="auto", choices=["auto", "gpu", "cpu", "disk"], help="Where to temporarily store the best checkpoint's weights during training. 'auto' (default) keeps them on the current model device.")
     parser.add_argument("--checkpoint_filename", default="checkpoint.weights.h5", type=str, help="Checkpoint filename.")
     parser.add_argument("--context_type", default="split_document", choices=["max_context", "sentence", "document", "split_document"], help="Context type to add to sentence.")
     parser.add_argument("--corpus", default=None, type=str, help="Corpus name. If given for training, the corpus name will be saved with the model.")
