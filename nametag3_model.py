@@ -93,14 +93,6 @@ class MemTraceCallback(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         self._log(f"epoch_{epoch+1}_end")
 
-    def on_train_batch_end(self, batch, logs=None):
-        if batch % 100 == 0:
-            a = torch.cuda.memory_allocated() / (1<<30)
-            r = torch.cuda.memory_reserved() / (1<<30)
-            m = torch.cuda.max_memory_allocated() / (1<<30)
-            print(f"[MEM batch_{batch}] alloc={a:.2f} reserved={r:.2f} peak={m:.2f}", flush=True)
-            torch.cuda.reset_peak_memory_stats()
-
 
 # DecoderTraining and DecoderPrediction implement the seq2seq decoder with hard
 # attention for nested NER proposed in https://aclanthology.org/P19-1527.pdf.
