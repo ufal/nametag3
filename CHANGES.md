@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed broken symlink traverse by using absolute path.
+
 ### Added
 
 - Added default `auto` value for `--best_weights_device`.
