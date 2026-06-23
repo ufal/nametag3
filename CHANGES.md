@@ -5,7 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## NameTag 3.2.0
+
+This release focuses on making it easier to train larger models with more parameters:
+
+- **LoRA (Low-Rank Adaptation):** Parameter-efficient fine-tuning that reduces the number of trainable parameters, making it feasible to adapt large transformer backbones with less memory.
+- **Gradient accumulation:** Train with large effective batch sizes that wouldn't otherwise fit in GPU memory, by accumulating gradients across multiple smaller steps.
+- **Configurable transformer weights dtype:** Reduce the memory footprint of large models by controlling the precision of transformer weights.
+- **GPU memory tracking:** Built-in memory debugging to diagnose and tune memory usage when scaling up.
+- **Early stopping best-weights storage device:** Offload best-weights checkpoints (e.g., to CPU) to free GPU memory during training, with a new `auto` default for `--best_weights_device`.
+- **User-requested max tokenizer length:** Override the Hugging Face max model length to better fit your data and memory budget, plus automatic resolution of the HF tokenizer max length when undeclared.
 
 ### Fixed
 
@@ -87,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changelog.
 
-## 3.1.0
+## NameTag 3.1.0
 
 Since NameTag 3.1, flat NER models can optionally be trained with multiple named entity tagsets. The trained model can then be required to recognize the named entities using a specific tagset during inference, or a predefined default tagset will be used if none was requested.
 
@@ -101,7 +110,7 @@ The currently supported tagsets are the following:
 
 In the NameTag 3 webservice, the tagset variants of one model are served separately, e.g., `nametag3-multilingual-conll-250203`, `nametag3-multilingual-uner-250203`, and `nametag3-multilingual-onto-250203`. The model tagset variants share one multilingual model and apply tagset masks on its output to predict tags of the requested tagset.
 
-## 3.0.0
+## NameTag 3.0.0
 
 NameTag 3.0 is an open-source tool for both flat and nested named entity recognition (NER). NameTag 3 identifies proper names in text and classifies them into a set of predefined categories, such as names of persons, locations, organizations, etc.
 
