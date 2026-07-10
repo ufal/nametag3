@@ -87,7 +87,6 @@ os.environ.setdefault("KERAS_BACKEND", "torch")
 import keras
 import numpy as np
 import torch
-import transformers
 
 from nametag3_dataset import NameTag3Dataset
 from nametag3_dataset_collection import NameTag3DatasetCollection
@@ -199,9 +198,8 @@ if __name__ == "__main__":
     print("Making logdir \"{}\"".format(args.logdir), file=sys.stderr, flush=True)
     os.makedirs(args.logdir, exist_ok=True)
 
-    # Load the tokenizer
-    tokenizer = transformers.AutoTokenizer.from_pretrained(args.hf_plm,
-                                                           add_prefix_space = args.hf_plm in ["roberta-base", "roberta-large", "ufal/robeczech-base", "allenai/biomed_roberta_base"])
+    # Load the HF tokenizer
+    tokenizer = NameTag3Dataset.get_hf_tokenizer(args.hf_plm)
 
     # We load the training data only to get the mappings, nothing else is used.
     train_loaded=None

@@ -570,7 +570,8 @@ class PLMLayer(keras.layers.Layer):
         self._plm = get_peft_model(base_model, peft_config) if lora else base_model
 
     def call(self, inputs, training=False):
-        return self._plm(keras.ops.maximum(inputs, 0), attention_mask=inputs > nametag3_dataset.BATCH_PAD).last_hidden_state
+        token_type_ids = keras.ops.zeros_like(inputs, dtype="int32")
+        return self._plm(keras.ops.maximum(inputs, 0), attention_mask=inputs > nametag3_dataset.BATCH_PAD, token_type_ids=token_type_ids).last_hidden_state
 
 
 class MacroAverageDevF1(keras.callbacks.Callback):

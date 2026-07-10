@@ -674,3 +674,13 @@ class NameTag3Dataset:
             output.pop()
 
         return "".join(output)
+
+    @staticmethod
+    def get_hf_tokenizer(hf_plm):
+        needs_prefix_space = {"roberta-base", "roberta-large", "ufal/robeczech-base", "allenai/biomed_roberta_base"}
+
+        kwargs = {}
+        if hf_plm in needs_prefix_space:
+            kwargs["add_prefix_space"] = True
+
+        return transformers.AutoTokenizer.from_pretrained(hf_plm, **kwargs)

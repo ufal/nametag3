@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade dependencies: transformers from 4.53.0 to 5.3.0. Required (i) change
+  in `add_prefix_space` in tokenizer initialization and (ii) supplying
+  `token_type_ids` explicitly in transfomer call due to major HF redesign in HF
+  v5.
+
 ## NameTag 3.2.0
 
 This release focuses on making it easier to train larger models with more parameters:
