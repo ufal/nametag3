@@ -570,8 +570,7 @@ class PLMLayer(keras.layers.Layer):
         self._plm = get_peft_model(base_model, peft_config) if lora else base_model
 
     def call(self, inputs, training=False):
-        token_type_ids = keras.ops.zeros_like(inputs, dtype="int32")
-        return self._plm(keras.ops.maximum(inputs, 0), attention_mask=inputs > nametag3_dataset.BATCH_PAD, token_type_ids=token_type_ids).last_hidden_state
+        return self._plm(keras.ops.maximum(inputs, 0), attention_mask=inputs > nametag3_dataset.BATCH_PAD).last_hidden_state
 
 
 class MacroAverageDevF1(keras.callbacks.Callback):
@@ -686,13 +685,21 @@ class NameTag3Model(keras.Model):
                 loss=SafeSparseCategoricalCrossentropy(from_logits=True, ignore_class=nametag3_dataset.BATCH_PAD),
                 metrics=self._create_metrics())
 
+        # Must call on fake dummy batch to force build and avoid symbolic build,
+        # which runs the underlying PLM on meta tensors, which sometimes crashes.
+        # To avoid the symbolic build, also the losses and metrics must be called.
+        self((keras.ops.ones((1,1), dtype="int32"), keras.ops.zeros((1,1), dtype="int32"), keras.ops.zeros((1,), dtype="float32")))
+        y_pred, y = keras.ops.zeros((1, 1, 1)), keras.ops.zeros((1, 1), dtype="int32")
+        self.compute_loss(x=None, y=y, y_pred=y_pred)
+        self.compute_metrics(x=None, y=y, y_pred=y_pred)
 
     def load_checkpoint(self, path):
         """Loads checkpoint from path."""
 
         print("Loading previously saved checkpoint from \"{}\"".format(path), file=sys.stderr, flush=True)
 
-        # Must call on fake dummy batch to force build.
+        # Must call on fake dummy batch to force build; here it is not necessary to call losses or metrics
+        # (in case the model is further trained, calling losses and metrics is handled by compile).
         self((keras.ops.ones((1,1), dtype="int32"), keras.ops.zeros((1,1), dtype="int32"), keras.ops.zeros((1,), dtype="float32")))
 
         self.load_weights(path)
@@ -790,6 +797,9 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         # Make sure we are in correct training/inference mode, as HF
         # Transformer loaded with from_config() by default sets training, while
         # from_pretrained() by default sets inference.
+        # TODO: The following lines are probably not called in training in train_step.
+        # Check whether it is true (by printing .training in train_step) and if it is,
+        # check how much it would influence training performance.
         if (training or False) != self._embeddings.training:
             self._embeddings.train(training or False)
 
@@ -802,6 +812,12 @@ class NameTag3ModelSeq2seq(NameTag3Model):
     def build(self, _input_shape):
         self._decoder_training_layer = DecoderTraining(self._output_layer_dim, self._latent_dim)
         self._decoder_prediction_layer = DecoderPrediction(self._decoder_training_layer, self._output_layer_dim, self._latent_dim, self._max_labels_per_token)
+
+        # Must call the training decoder on fake dummy batch to build it and avoid symbolic build.
+        # Unfortunately, the training decoder is not called in `call` method, it is called
+        # only in `train_step` method.
+        embeddings = self._embeddings(keras.ops.ones((1,1), dtype="int32"))
+        self._decoder_training_layer(embeddings, keras.ops.zeros((1, 1), dtype="int32"))
 
     def train_step(self, data):
         """Override train_step to use DecoderTraining."""

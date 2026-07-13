@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Avoid symbolic build. Symbolic build creates tensors on device 'meta', which
+  sometimes leads to crashes.
+
 ### Changed
 
 - Upgrade dependencies: transformers from 4.53.0 to 5.3.0. Required (i) change
