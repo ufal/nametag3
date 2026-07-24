@@ -110,7 +110,7 @@ if __name__ == "__main__":
     parser.add_argument("--corpus", default=None, type=str, help="Corpus name. If given for training, the corpus name will be saved with the model.")
     parser.add_argument("--debug_memory", default=False, action="store_true", help="If enabled, GPU memory is traced during training for debugging.")
     parser.add_argument("--decoding", default="classification", choices=["classification", "seq2seq"], help="Decoding head.")
-    parser.add_argument("--default_tagset", default="conll", choices=["conll", "uner", "onto"], help="Default tagset if --tagsets used during training. Use --default_tagset during training to save with the model as a fallback tagset for dev/test data predicted later without specified --tagsets.")
+    parser.add_argument("--default_tagset", default="conll", type=lambda v: None if v.lower() == "none" else v, choices=["conll", "uner", "onto", None], help="Default tagset to use if --tagsets is used during training. Saved with the model as a fallback tagset for dev/test data predicted later without --tagsets specified. May be set to None (pass --default_tagset=none) during training if a --tagsets_description is provided instead, in which case no fallback tagset is stored with the model.")
     parser.add_argument("--dev_data", default=None, type=str, help="Dev data.")
     parser.add_argument("--dropout", default=0.5, type=float, help="Dropout rate.")
     parser.add_argument("--epochs", default="10", type=int, help="Number of epochs.")
@@ -140,6 +140,7 @@ if __name__ == "__main__":
     parser.add_argument("--subword_masking", default=0.0, type=float, help="Mask subwords with the given probability.")
     parser.add_argument("--steps_per_epoch", default=None, type=int, help="Steps per epoch. Default None (epoch iterates over all data).")
     parser.add_argument("--tagsets", default=None, type=str, help="Specifies the tagsets corresponding to the given corpora for multitagset training, separated by commas. During training, each tagset is applied to its respective corpus. When used in prediction mode, the output will only include valid tags from the specified tagset(s).")
+    parser.add_argument("--tagsets_description", default=None, type=str, help="Free-text description of the tagsets used for training, e.g., which tagset was applied to which language or corpus. Providing this argument during training allows --default_tagset to be set to None instead of a specific tagset. The description is saved with the model and printed during inference to inform the user about the tagset selection used.")
     parser.add_argument("--temperature", default=2.0, type=float, help="Value of temperature for temperature sampling.")
     parser.add_argument("--test_data", default=None, type=str, help="Test data.")
     parser.add_argument("--time", default=False, action="store_true", help="Measure prediction time.")
@@ -155,8 +156,9 @@ if __name__ == "__main__":
         with open("{}/options.json".format(args.load_checkpoint), mode="r") as options_file:
             train_args = argparse.Namespace(**json.load(options_file))
         for key in ["checkpoint_filename", "context_type", "decoding",
-                    "default_tagset", "hf_plm", "keep_original_casing",
-                    "lora", "lora_rank", "max_tokenizer_length"]:
+                    "default_tagset", "hf_plm", "keep_original_casing", "lora",
+                    "lora_rank", "max_tokenizer_length",
+                    "tagsets_description"]:
             if hasattr(train_args, key):
                 args.__dict__[key] = train_args.__dict__[key]
 
@@ -180,9 +182,9 @@ if __name__ == "__main__":
                 "load_checkpoint", "logdir", "lora", "lora_rank",
                 "max_labels_per_token", "max_sentences_train",
                 "max_tokenizer_length", "sampling", "save_best_checkpoint",
-                "seed", "subword_masking", "tagsets", "temperature",
-                "test_data", "threads", "time", "train_data", "warmup_epochs",
-                "warmup_epochs_frozen"]:
+                "seed", "subword_masking", "tagsets", "tagsets_description",
+                "temperature", "test_data", "threads", "time", "train_data",
+                "warmup_epochs", "warmup_epochs_frozen"]:
         del logargs[key]
 
     # Include unique Slurm job id if running in Slurm-managed environment.

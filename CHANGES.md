@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Command-line argument `--tagsets_description`, a free-text description of
+  the tagsets used for training a multitagset model. It serves as an
+  alternative to `--default_tagset` for multitagset training.
+
+### Changed
+
+- `--default_tagset` now accepts the value `none` (case-insensitive), which
+  is stored as `None`. This allows training a multitagset model without a
+  fallback tagset for inference, provided `--tagsets_description` is given
+  instead.
+
 ### Fixed
 
 - Avoid symbolic build. Symbolic build creates tensors on device 'meta', which

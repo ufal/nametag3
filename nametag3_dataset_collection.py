@@ -112,22 +112,32 @@ class NameTag3DatasetCollection:
         self._corpora = args.corpus.split(",") if args.corpus else None
         self._training = train_collection == None
 
-        # Tagsets
+        ### Single- and multitagset logic and sanity checks
+
+        # Tagsets setting from args
         self.tagsets = tagsets.split(",") if tagsets else None
         default_tagset = args.default_tagset if hasattr(args, "default_tagset") else None
+        tagsets_description = args.tagsets_description if hasattr(args, "tagsets_description") else None
 
-        # Default tagset must be specified for multitagset training.
-        if self._training and self.tagsets and not default_tagset:
-            raise ValueError("--default_tagset must be specified if --tagsets are used in training.")
+        # Default tagset or tagsets description must be specified for multitagset training.
+        if self._training and self.tagsets and not default_tagset and not tagsets_description:
+            raise ValueError("--default_tagset or --tagsets_description must be specified if --tagsets are used in training.")
 
         # Default tagset must be one of the specified tagsets.
-        if self._training and self.tagsets and default_tagset not in set(self.tagsets):
+        if self._training and self.tagsets and default_tagset and default_tagset not in set(self.tagsets):
             raise ValueError("--default_tagset must be one of --tagsets for multitagset training.")
 
-        # Fallback to default tagset if no tagset for dev/test.
+        # During inference of a multitagset model, inform the user about the tagsets that were used, if a description was saved.
+        if not self._training and train_collection and train_collection.tagsets and tagsets_description:
+            print("Tagsets description: \"{}\"".format(tagsets_description), file=sys.stderr, flush=True)
+
+        # If no tagset for dev/test inference, fallback to default tagset first, or request tagsets explicitly.
         if train_collection and train_collection.tagsets and not self.tagsets:
-            print("Falling back to default tagset \"{}\" as no tagset specified.".format(default_tagset), file=sys.stderr, flush=True)
-            self.tagsets = [default_tagset] * len(filenames) if filenames else [default_tagset]
+            if default_tagset:
+                print("Falling back to default tagset \"{}\" as no tagset specified.".format(default_tagset), file=sys.stderr, flush=True)
+                self.tagsets = [default_tagset] * len(filenames) if filenames else [default_tagset]
+            else:
+                raise ValueError("The model was trained in multitagset setting without a --default_tagset, so you must specify the selected tagset(s) for inference. Please specify --tagsets, with value of one of the following: {}.{}".format(", ".join(set(train_collection.tagsets)), " The tagsets used for this model are described as: \"{}\"".format(tagsets_description) if tagsets_description else ""))
 
         # Must not request --tagsets for prediction with a model trained without --tagsets.
         if train_collection and self.tagsets and not train_collection.tagsets:
@@ -137,7 +147,9 @@ class NameTag3DatasetCollection:
         if train_collection and train_collection.tagsets and self.tagsets:
             for tagset in self.tagsets:
                 if tagset not in set(train_collection.tagsets):
-                    raise ValueError("Tagset '{}' requested for prediction was not among tagsets used for training the model ({})".format(tagset, ",".join(set(train_collection.tagsets))))
+                    raise ValueError("Tagset '{}' requested for prediction was not among tagsets used for training the model ({})".format(tagset, ", ".join(set(train_collection.tagsets))))
+
+        ### Reading data
 
         # Reading dataset(s) from file(s).
         if filenames:
