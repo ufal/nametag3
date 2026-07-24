@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Refactored `load_mappings()` and `save_mappings()` to handle directories
+  properly and share mappings filename.
+
 ### Added
 
 - Command-line argument `--tagsets_description`, a free-text description of

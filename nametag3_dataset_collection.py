@@ -106,6 +106,8 @@ class NameTag3DatasetCollection:
     dataset in the collection has the complete vocabularies.
     """
 
+    MAPPINGS_FILENAME = "mappings.pickle"
+
     def __init__(self, args, tokenizer, filenames=None, text=None, train_collection=None, tagsets=None):
 
         self._datasets = []
@@ -257,9 +259,10 @@ class NameTag3DatasetCollection:
 
         return [x.create_torch_dataloader(args, shuffle=shuffle) for x in self._datasets]
 
-    def load_collection_mappings(self, filename):
+    def load_collection_mappings(self, path):
+        mappings_filename = os.path.join(path, self.MAPPINGS_FILENAME)
 
-        with open("{}/mappings.pickle".format(filename), mode="rb") as mappings_file:
+        with open(mappings_filename, mode="rb") as mappings_file:
             dataset = pickle.load(mappings_file)
 
         dataset.__class__ = NameTag3Dataset
@@ -267,5 +270,8 @@ class NameTag3DatasetCollection:
         self._datasets = [dataset]
 
     def save_mappings(self, path):
-        os.makedirs("{}/model".format(path), exist_ok=True)
-        self._datasets[-1].save_mappings("{}/model/mappings.pickle".format(path))
+        save_dirname = os.path.join(path, "model")
+        os.makedirs(save_dirname, exist_ok=True)
+
+        mappings_filename = os.path.join(save_dirname, self.MAPPINGS_FILENAME)
+        self._datasets[-1].save_mappings(mappings_filename)
