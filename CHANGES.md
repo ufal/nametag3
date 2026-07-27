@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgrade dependencies: torch 2.13.0.
+- Upgrade dependencies: transformers 5.5.0.
+
+### Changed
+
 - Refactored `load_mappings()` and `save_mappings()` to handle directories
   properly and share mappings filename.
 
