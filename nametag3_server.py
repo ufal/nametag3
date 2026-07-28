@@ -388,6 +388,15 @@ class Models:
                         open_labels = []
                     else:
                         labels = ne.split("|")
+
+                        # A nested entity that ends before its parent is closed
+                        # immediately, so it does not span the parent's
+                        # remaining tokens.
+                        if len(labels) < len(open_labels):
+                            for _ in open_labels[len(labels):]:
+                                output.append("</ne>")
+                            open_labels = open_labels[:len(labels)]
+
                         for i in range(len(labels)):
                             if i < len(open_labels):
                                 if labels[i].startswith("B-") or open_labels[i] != labels[i][2:]:

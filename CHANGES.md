@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 3.2.1
+
+### Fixed
+
+- NameTag 3 server XML output: a nested entity that ended before its containing
+  entity was closed too late, so it incorrectly spanned the containing entity's
+  remaining tokens. This affected nested entities that begin a longer containing
+  entity, such as `ps` or `pf` inside `if`, or `gu` inside `gc`. The `vertical`,
+  `conllu-ne` and JSON outputs were never affected.
+
 ### Changed
 
 - Upgrade dependencies: torch 2.13.0.
