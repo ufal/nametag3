@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 3.2.2
+
+Bugfix release for seq2seq (nested named entity) prediction. Flat/tagger
+decoding, training and all model files are untouched: **no retraining and no
+model re-download is needed**, just upgrade and re-run prediction.
+
+### Fixed
+
+- **Misaligned labels after a splitted sentence for seq2seq (nested NER).**
+  Sentences longer than the maximum input length are decoded in several parts.
+  The decoded label sequences are accumulated per part, but were looked up by
+  sentence index, so each splitted sentence pushed the lookup one position out
+  of sync: every following sentence was labelled with the predictions belonging
+  to an earlier part, and the tail of the long sentence itself came out as `O`
+  because its continuation was not always decoded.
+
 ## 3.2.1
 
 ### Fixed

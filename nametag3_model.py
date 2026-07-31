@@ -882,65 +882,104 @@ class NameTag3ModelSeq2seq(NameTag3Model):
         the model trained from and underlying corpus (i.e., IOB as found in English
         CoNLL-2003 dataset).
 
-        See the NameTag3Dataset.postprocess() method for correct bracketing and
-        BIO (IOB-2) formatting of the output.
+        See the postprocess() method for correct bracketing and BIO (IOB-2)
+        formatting of the output.
+
+        Note that a single original sentence can be decoded as several splits
+        when it is too long.
+
+        The alignment of the source words to the decoded splits is driven
+        exclusively by the number of words in each split (taken from `word_ids`
+        of the input batch), never by the number of generated labels: the
+        generated output may be malformed (a truncated split may contain fewer
+        EOWs than it has words), and inferring split boundaries from the
+        generated content would desynchronize the whole rest of the file.
         """
 
-        # For simplicity, seq2seq batch decoding is implemented for
-        # --context_type=sentence only. The sentences are never concatenated to
-        # create a larger context and are always processed one by one. The only
-        # disturbance is when the sentence is too long and must be splitted
-        # into two splits, but even then the sentences (their splits) are
-        # always processed separately.
-
-        predicted_tag_ids = []  # all predicted tag ids (sentences x tags)
-        batch_output = []       # accumulated batch output to be yielded
+        predicted_tag_ids = []      # generated tag ids per decoded split
+        predicted_num_words = []    # number of source words per decoded split
+        batch_output = []
         forms = dataset.forms()
         docstarts = dataset.docstarts()
         batch_iterator = iter(dataset.create_torch_dataloader(args, shuffle=False))
-        yield_batch = False     # yield batch at the end of sentence
+        yield_batch = False
+        exhausted = False
+        malformed_words = 0
 
-        for s in range(len(forms)): # original sentences
+        p = 0   # index of the current split
+        t = 0   # index of the current tag inside the current split
+        w = 0   # number of words already consumed from the current split
+
+        for s in range(len(forms)):
             batch_output.append("")
 
             if docstarts[s]:
                 batch_output.append(docstarts[s])
 
-            t = 0
-            for f in range(len(forms[s])):  # original words
-                # Not enough sentences predicted or sentence split between
-                # batches => predict next batch.
-                # TODO: This will always lead to the first sentence being
-                # yielded separately in the first batch actually, add
-                # a condition to prevent this.
-                if s >= len(predicted_tag_ids) or (t >= len(predicted_tag_ids[s]) and len(predicted_tag_ids) < len(forms)):
-                    inputs, _ = next(batch_iterator)
-                    for sentence_predicted_tag_ids in self.predict_on_batch(inputs):
-                        predicted_tag_ids.append(sentence_predicted_tag_ids[sentence_predicted_tag_ids != nametag3_dataset.BATCH_PAD].tolist())
-                    t = 0
+            for f in range(len(forms[s])):
+                # Move to the split holding the predictions for this word. The
+                # boundary is the word capacity of the split, not the amount of
+                # generated labels.
+                while not exhausted and (p >= len(predicted_num_words) or w >= predicted_num_words[p]):
+                    if p < len(predicted_num_words):
+                        p += 1          # continuation split of the same sentence
+                        t, w = 0, 0
+                        continue
+                    try:
+                        inputs, _ = next(batch_iterator)
+                    except StopIteration:
+                        exhausted = True
+                        break
+
+                    _, word_ids, _ = inputs
+                    num_words = (word_ids != nametag3_dataset.BATCH_PAD).sum(dim=-1).tolist()
+                    for split_tag_ids, split_num_words in zip(self.predict_on_batch(inputs), num_words):
+                        predicted_tag_ids.append(
+                            split_tag_ids[split_tag_ids != nametag3_dataset.BATCH_PAD].tolist())
+                        predicted_num_words.append(int(split_num_words))
                     yield_batch = True
 
                 labels = []
-                while t < len(predicted_tag_ids[s]) and predicted_tag_ids[s][t] != nametag3_dataset.EOW:
-                    sublabel = self._id2label[predicted_tag_ids[s][t]]
-                    if sublabel not in nametag3_dataset.CONTROL_LABELS:
-                        labels.append(sublabel)
-                    t += 1
+                if p < len(predicted_tag_ids):
+                    while (t < len(predicted_tag_ids[p]) and predicted_tag_ids[p][t] != nametag3_dataset.EOW):
+                        sublabel = self._id2label[predicted_tag_ids[p][t]]
+                        if sublabel not in nametag3_dataset.CONTROL_LABELS:
+                            labels.append(sublabel)
+                        t += 1
 
-                if t < len(predicted_tag_ids[s]):
-                    t += 1 # skip the EOW
+                    if t < len(predicted_tag_ids[p]):
+                        t += 1          # skip the EOW
+                    else:
+                        # Malformed (truncated) generation: no EOW for this
+                        # word. Consume the word anyway; the remaining words of
+                        # this split get "O". The alignment cannot drift.
+                        malformed_words += 1
+
+                    w += 1
+
                 label = "|".join(labels) if labels else "O"
-
                 batch_output[-1] += "{}\t{}\n".format(forms[s][f], label)
 
             batch_output[-1] += "\n"
 
-            if yield_batch:
+            # A split never spans two sentences with --context_type=sentence,
+            # so the sentence must end exactly at a split boundary.
+            if len(forms[s]):
+                if not exhausted and (p >= len(predicted_num_words) or w != predicted_num_words[p]):
+                    raise RuntimeError("NameTag3ModelSeq2seq.yield_predicted_batches(): sentence {} of dataset '{}' does not end at a split boundary ({} of {} words of the split consumed). The decoded splits cannot be aligned with the source words.".format(s, dataset_name, w, predicted_num_words[p] if p < len(predicted_num_words) else None))
+                p += 1
+                t, w = 0, 0
+
+            if yield_batch and p >= len(predicted_tag_ids):
                 yield batch_output
                 batch_output = []
                 yield_batch = False
 
-        if batch_output:  # flush the last batch
+        if malformed_words:
+            print("Warning: {} words had no EOW in the generated output (truncated generation), labelled 'O'. (This often happens in early stages of model training.)".format(malformed_words),
+                  file=sys.stderr, flush=True)
+
+        if batch_output:
             yield batch_output
 
 
