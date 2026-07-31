@@ -7,5 +7,5 @@ seqeval~=1.2.2
 tensorboard~=2.20.0
 torch~=2.13.0
 transformers~=5.5.0
-ufal.morphodita~=1.11.2.1
-ufal.udpipe~=1.3.1.1
+ufal.morphodita~=1.11.3
+ufal.udpipe~=1.4.0
