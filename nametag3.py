@@ -92,7 +92,7 @@ from nametag3_dataset import NameTag3Dataset
 from nametag3_dataset_collection import NameTag3DatasetCollection
 from nametag3_model import nametag3_model_factory
 
-__version__ = "3.3.0-dev"
+__version__ = "3.2.3-dev"
 
 
 if __name__ == "__main__":
