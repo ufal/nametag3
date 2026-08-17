@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 3.2.3-dev
 
+### Changed
+
+- Reduce HF tokenizer verbosity.
+
+### Changed
+
 - Upgrade dependencies: ufal.morphodita 1.11.3.
 - Upgrade dependencies: ufal.udpipe 1.4.0.
 

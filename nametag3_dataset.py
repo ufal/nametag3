@@ -363,7 +363,10 @@ class NameTag3Dataset:
             batch_inputs = [[unicodedata.normalize("NFC", form[:MAX_CHARS_PER_WORD]) for form in sentence] for sentence in self._forms[start:end]]
             batch_docstarts = self._docstarts[start:end]
             batch_outputs = self._label_ids[start:end]
-            inputs = self._tokenizer(batch_inputs if keep_original_casing else self._truecase(batch_inputs), add_special_tokens=False, is_split_into_words=True)
+            inputs = self._tokenizer(batch_inputs if keep_original_casing else self._truecase(batch_inputs),
+                                     add_special_tokens=False,
+                                     is_split_into_words=True,
+                                     verbose=False)
 
             # Split too long sentences, collect first subword indices for
             # gathering in NN and split docstarts and outputs accordingly.
