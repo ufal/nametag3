@@ -162,7 +162,7 @@ class Models:
             print("Model options loaded successfully:\n{}".format(self._args), file=sys.stderr, flush=True)
 
             # Load the HF tokenizer
-            self.hf_tokenizer = NameTag3Dataset.get_hf_tokenizer(self._args.hf_plm)
+            self.hf_tokenizer = NameTag3Dataset.get_hf_tokenizer(self._args.hf_plm, load_dirname=path)
 
             # Unpickle word mappings of train data
             self._train_collection = NameTag3DatasetCollection(self._args,

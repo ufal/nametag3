@@ -269,9 +269,11 @@ class NameTag3DatasetCollection:
 
         self._datasets = [dataset]
 
-    def save_mappings(self, path):
+    def save_mappings_and_hf_tokenizer(self, path):
         save_dirname = os.path.join(path, "model")
         os.makedirs(save_dirname, exist_ok=True)
 
         mappings_filename = os.path.join(save_dirname, self.MAPPINGS_FILENAME)
         self._datasets[-1].save_mappings(mappings_filename)
+
+        self._datasets[-1].save_hf_tokenizer(save_dirname)

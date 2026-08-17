@@ -201,7 +201,7 @@ if __name__ == "__main__":
     os.makedirs(args.logdir, exist_ok=True)
 
     # Load the HF tokenizer
-    tokenizer = NameTag3Dataset.get_hf_tokenizer(args.hf_plm)
+    tokenizer = NameTag3Dataset.get_hf_tokenizer(args.hf_plm, load_dirname=args.load_checkpoint)
 
     # We load the training data only to get the mappings, nothing else is used.
     train_loaded=None
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     if args.train_data:
         train_collection = NameTag3DatasetCollection(args, tokenizer, filenames=args.train_data, train_collection=train_loaded, tagsets=args.tagsets)
         if args.save_best_checkpoint:
-            train_collection.save_mappings(args.logdir)
+            train_collection.save_mappings_and_hf_tokenizer(args.logdir)
 
     dev_collection=None
     if args.dev_data:

@@ -99,6 +99,8 @@ class NameTag3Dataset:
     FORMS = 0
     TAGS = 1
 
+    HF_TOKENIZER_SENTINEL = "tokenizer_config.json"
+
     def __init__(self, args, tokenizer=None, filename=None, text=None, train_dataset=None, previous_dataset=None, corpus=None, tagset=None):
         """Load the dataset from a two column CoNLL-like format.
 
@@ -679,11 +681,26 @@ class NameTag3Dataset:
         return "".join(output)
 
     @staticmethod
-    def get_hf_tokenizer(hf_plm):
+    def get_hf_tokenizer(hf_plm, load_dirname=None):
         needs_prefix_space = {"roberta-base", "roberta-large", "ufal/robeczech-base", "allenai/biomed_roberta_base"}
 
         kwargs = {}
         if hf_plm in needs_prefix_space:
             kwargs["add_prefix_space"] = True
 
+        if load_dirname is not None:
+            sentinel = os.path.join(load_dirname, NameTag3Dataset.HF_TOKENIZER_SENTINEL)
+            if os.path.isfile(sentinel):
+                try:
+                    return transformers.AutoTokenizer.from_pretrained(load_dirname, local_files_only=True, **kwargs)
+                except (OSError, ValueError) as e:
+                    # Files are there but unusable: corrupted or partial checkpoint.
+                    print(f"Warning: found a local HF tokenizer in {load_dirname} but failed to load it ({e}); falling back to {hf_plm} from the HuggingFace hub or local HF cache.", file=sys.stderr)
+            else:
+                # Checkpoint predates local tokenizer saving; this is expected.
+                print(f"Info: no local HF tokenizer in {load_dirname}, loading {hf_plm} from the HuggingFace hub or local HF cache.", file=sys.stderr)
+
         return transformers.AutoTokenizer.from_pretrained(hf_plm, **kwargs)
+
+    def save_hf_tokenizer(self, save_dirname):
+        self._tokenizer.save_pretrained(save_dirname)

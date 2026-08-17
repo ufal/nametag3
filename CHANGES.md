@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 3.2.3-dev
 
+### Added
+
+- The HF tokenizer is now bundled in the NameTag 3 model directory, so loading
+  a model no longer requires downloading the tokenizer from the HF Hub.
+
 ### Changed
 
 - Reduce HF tokenizer verbosity.
