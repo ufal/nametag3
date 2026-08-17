@@ -975,8 +975,8 @@ class NameTag3ModelSeq2seq(NameTag3Model):
                 batch_output = []
                 yield_batch = False
 
-            if malformed_words:
-                print("Note: {n} decoded word{s} did not emit an end-of-word marker; the label sequence was closed automatically and set to 'O'. No action needed.".format(n=malformed_words, s="" if malformed_words == 1 else "s"), file=sys.stderr, flush=True)
+        if malformed_words:
+            print("Note: {n} decoded word{s} did not emit an end-of-word marker; the label sequence was closed automatically and set to 'O'. No action needed.".format(n=malformed_words, s="" if malformed_words == 1 else "s"), file=sys.stderr, flush=True)
 
         if batch_output:
             yield batch_output
