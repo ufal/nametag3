@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Reduce HF tokenizer verbosity.
+- Downgraded the "no EOW in generated output" warning to an informational note.
 
 ### Changed
 
