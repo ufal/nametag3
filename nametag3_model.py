@@ -537,6 +537,26 @@ class TagsetMaskLayer(keras.layers.Layer):
 class PLMLayer(keras.layers.Layer):
     """Custom Keras layer as a wrapper around PyTorch AutoModel."""
 
+    HF_CONFIG_SENTINEL = "config.json"
+
+    @staticmethod
+    def _load_hf_config(hf_plm, load_dirname=None, **kwargs):
+        """Loads the HF config, preferring a local copy in the checkpoint dir."""
+
+        if load_dirname is not None:
+            sentinel = os.path.join(load_dirname, PLMLayer.HF_CONFIG_SENTINEL)
+            if os.path.isfile(sentinel):
+                try:
+                    return transformers.AutoConfig.from_pretrained(load_dirname, local_files_only=True, **kwargs)
+                except (OSError, ValueError) as e:
+                    # File is there but unusable: corrupted or partial checkpoint.
+                    print(f"Warning: found a local HF config in {load_dirname} but failed to load it ({e}); falling back to {hf_plm} from the HuggingFace hub or local HF cache.", file=sys.stderr)
+            else:
+                # Checkpoint predates local config saving; this is expected.
+                print(f"Info: no local HF config in {load_dirname}, loading {hf_plm} from the HuggingFace hub or local HF cache.", file=sys.stderr)
+
+        return transformers.AutoConfig.from_pretrained(hf_plm, **kwargs)
+
     def __init__(self, hf_plm, load_checkpoint, lora=False, lora_rank=16, transformer_weights_dtype=None):
         super().__init__()
 
@@ -562,15 +582,22 @@ class PLMLayer(keras.layers.Layer):
         if load_checkpoint:
             # Build empty architecture only; weights will be restored from the
             # Keras checkpoint via model.load_weights() later.
-            config = transformers.AutoConfig.from_pretrained(hf_plm)
+            config = self._load_hf_config(hf_plm, load_dirname=load_checkpoint)
             base_model = transformers.AutoModel.from_config(config, torch_dtype=torch_dtype)
         else:
             base_model = transformers.AutoModel.from_pretrained(hf_plm, torch_dtype=torch_dtype)
+
+        # Keep the HF architecture config reachable for saving.
+        self._hf_config = base_model.config
 
         self._plm = get_peft_model(base_model, peft_config) if lora else base_model
 
     def call(self, inputs, training=False):
         return self._plm(keras.ops.maximum(inputs, 0), attention_mask=inputs > nametag3_dataset.BATCH_PAD).last_hidden_state
+
+    def get_hf_config(self):
+        """Returns the transformers config of the wrapped PLM."""
+        return self._hf_config
 
 
 class MacroAverageDevF1(keras.callbacks.Callback):
@@ -643,6 +670,10 @@ class NameTag3Model(keras.Model):
         # Callback for saving the best checkpoint. Saved here for transfering
         # between frozen pretraining and fine-tuning.
         self._model_checkpoint = None
+
+    def get_hf_config(self):
+        """Returns the transformers config of the wrapped PLM."""
+        return self._embeddings.get_hf_config()
 
     def compile(self, training_batches=0, frozen=False):
         """Compiles the model for either frozen training or fine-tuning."""
@@ -738,6 +769,10 @@ class NameTag3Model(keras.Model):
             # Save model training arguments
             with open(os.path.join(model_dir, "options.json"), mode="w") as options_file:
                 json.dump(vars(self._args), options_file, sort_keys=True)
+
+            # Save the HF PLM architecture config so the model dir is
+            # self-contained and does not require Hub access at load time.
+            self.get_hf_config().save_pretrained(model_dir)
 
         if dev_collection:
             callbacks.append(CheckpointAndRestoreBestWeightsCallback(objective="val_macro_avg_f1",
