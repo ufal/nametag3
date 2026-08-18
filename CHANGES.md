@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 3.2.3-dev
 
+### Changed
+
+- Removed unused parameter `tokenizer` from `PLMLayer`.
+
 ### Added
 
 - The HF tokenizer is now bundled in the NameTag 3 model directory, so loading

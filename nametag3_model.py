@@ -537,7 +537,7 @@ class TagsetMaskLayer(keras.layers.Layer):
 class PLMLayer(keras.layers.Layer):
     """Custom Keras layer as a wrapper around PyTorch AutoModel."""
 
-    def __init__(self, hf_plm, tokenizer, load_checkpoint, lora=False, lora_rank=16, transformer_weights_dtype=None):
+    def __init__(self, hf_plm, load_checkpoint, lora=False, lora_rank=16, transformer_weights_dtype=None):
         super().__init__()
 
         if transformer_weights_dtype is not None:
@@ -628,7 +628,6 @@ class NameTag3Model(keras.Model):
 
         # Layers
         self._embeddings = PLMLayer(args.hf_plm,
-                                    tokenizer,
                                     load_checkpoint=args.load_checkpoint,
                                     lora=getattr(args, "lora", False),
                                     lora_rank=getattr(args, "lora_rank", 16),
