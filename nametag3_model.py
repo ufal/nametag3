@@ -740,6 +740,10 @@ class NameTag3Model(keras.Model):
         if hasattr(self, "optimizer"):
             self.optimizer.iterations.assign(0)
 
+        # Inform the user about the tagsets that were used, if a description was saved.
+        if hasattr(self._args, "tagsets_description") and self._args.tagsets_description:
+            print("Loaded multitagset model; tagsets description: {}".format(self._args.tagsets_description), file=sys.stderr, flush=True)
+
     def fit(self, epochs, train_collection, dev_collection=None, save_best_checkpoint=False, initial_epoch=0):
         """"Trains (frozen or fine-tuning) the model."""
 

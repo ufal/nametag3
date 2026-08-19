@@ -129,10 +129,6 @@ class NameTag3DatasetCollection:
         if self._training and self.tagsets and default_tagset and default_tagset not in set(self.tagsets):
             raise ValueError("--default_tagset must be one of --tagsets for multitagset training.")
 
-        # During inference of a multitagset model, inform the user about the tagsets that were used, if a description was saved.
-        if not self._training and train_collection and train_collection.tagsets and tagsets_description:
-            print("Tagsets description: \"{}\"".format(tagsets_description), file=sys.stderr, flush=True)
-
         # If no tagset for dev/test inference, fallback to default tagset first, or request tagsets explicitly.
         if train_collection and train_collection.tagsets and not self.tagsets:
             if default_tagset:

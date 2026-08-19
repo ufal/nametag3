@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Print tagsets description only once, during model load.
+
 ### Added
 
 - The HF model config is now bundled in the NameTag3 model directory, so loading
