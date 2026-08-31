@@ -17,8 +17,16 @@ Chinese, Croatian, Czech, Danish, Dutch, English, German, Greek, Hebrew,
 Maghrebi Arabic, Norwegian Bokmål, Norwegian Nynorsk, Portuguese, Serbian,
 Slovak, Slovenian, Spanish, Swedish, and Ukrainian.
 
-NameTag 3 is a free software under [Mozilla Public License 2.0](htts://www.mozilla.org/MPL/2.0/), and the linguistic models are free for non-commercial use and distributed under [CC BY-NC-SA license](https://creativecommons.org/licenses/by-nc-sa/4.0/), although for some models the original data used to create the
-model may impose additional licensing conditions. NameTag is versioned using [Semantic Versioning](https://semver.org./).
+NameTag 3 is free software distributed under the
+[Mozilla Public License 2.0](https://www.mozilla.org/MPL/2.0/), which allows
+both non-commercial and commercial use. Unless stated otherwise, the associated
+linguistic models and data are available for non-commercial use under the
+[CC BY-NC-SA 4.0 license](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+**Commercial licenses are available for selected NameTag 3 models; see the
+[NameTag 3 Commercial webpage](https://ufal.mff.cuni.cz/nametag/3/commercial) for details.**
+For complete licensing information, see the [License](#license) section below.
+
+NameTag is versioned according to [Semantic Versioning](https://semver.org/).
 
 Copyright 2024 Institute of Formal and Applied Linguistics, Faculty of Mathematics and Physics, Charles University, Czech Republic.
 
@@ -41,22 +49,24 @@ refers to demo and online web service.
 ## License
 
 NameTag 3 is free software distributed under the
-[Mozilla Public License 2.0](https://www.mozilla.org/MPL/2.0/).
+[Mozilla Public License 2.0](https://www.mozilla.org/MPL/2.0/), which allows
+both non-commercial and commercial use.
 
 Unless stated otherwise, the associated linguistic models and data are
 available for non-commercial use under the
 [CC BY-NC-SA 4.0 license](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 Some models may be subject to additional licensing conditions imposed by the
-original data used to create them. Please consult the [NameTag 3 Models webpage](https://ufal.mff.cuni.cz/nametag/3/models) before using one of the models.
+original data used to create them. Please consult the
+[NameTag 3 Models webpage](https://ufal.mff.cuni.cz/nametag/3/models)
+before using one of the models.
 
-We are currently developing models trained exclusively on data available under
-more permissive licenses. Our aim is to make commercial licensing available
-for these models in the future. Commercial licenses are not currently
-available unless explicitly stated otherwise.
+Commercial licenses are available for selected NameTag 3 models. For an
+overview of the models available for commercial use and further licensing
+information, please see the
+[NameTag 3 Commercial webpage](https://ufal.mff.cuni.cz/nametag/3/commercial).
 
-NameTag is versioned according to [Semantic Versioning](https://semver.org/).
-
-If you use this tool for scientific work, please give us credit by referencing [Straková & Straka (2025)](#how-to-cite-nametag-3).
+If you use this tool for scientific work, please give us credit by referencing
+[Straková & Straka (2025)](#how-to-cite-nametag-3).
 
 
 ## How to Cite NameTag 3
