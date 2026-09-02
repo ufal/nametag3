@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `requirements-cu126.txt` for CUDA capabilities below 7.5.
+
 ### Changed
 
 - Print tagsets description only once, during model load.
