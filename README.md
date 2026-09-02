@@ -298,16 +298,14 @@ Download the [latest version of NameTag 3 models](https://ufal.mff.cuni.cz/namet
 venv/bin/python3 ./nametag3.py [--argument=value]
 ```
 
+### Installation for AMD GPUs
 
-### Installation for AMD
-
-In step 4, delete `torch` from `requirements.txt`, and install all the required
-packages except PyTorch with ROCm support, which will be installed with
-a separate command:
+Follow the NVIDIA instructions above, but in step 5 install with
+`requirements-rocm7.2.txt`, which installs a torch build compiled
+against ROCm 7.2 instead of CUDA:
 
 ```sh
-venv/bin/pip install -r requirements.txt
-venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2.4
+venv/bin/pip install -r requirements-rocm7.2.txt
 ```
 
 

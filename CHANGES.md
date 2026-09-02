@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `requirements-cu126.txt` for CUDA capabilities below 7.5.
+- `requirements-rocm7.2.txt` for AMD GPUs.
 
 ### Changed
 
