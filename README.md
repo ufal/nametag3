@@ -265,16 +265,10 @@ package they install. Print the compute capability of your GPU:
 nvidia-smi --query-gpu=name,compute_cap,driver_version --format=csv
 ```
 
-| Reported `compute_cap`   | Use this file             |
-|--------------------------|---------------------------|
-| 7.5 or higher            | `requirements.txt`        |
-| 5.0 to 7.2               | `requirements-cu126.txt`  |
-| below 5.0                | neither (CPU only)        |
-
-`requirements.txt` supports compute capability 7.5 through 12.0 (Turing, Ampere,
-Ada, Hopper, Blackwell), `requirements-cu126.txt` supports 5.0 through 9.0
-(Maxwell, Pascal, Volta, Turing, Ampere, Ada, Hopper). Use `requirements.txt`
-unless your GPU is too old for it.
+| Requirements file        | Supports compute capability | Use when                 |
+|--------------------------|-----------------------------|--------------------------|
+| `requirements.txt`       | 7.5 – 12.0                  | your GPU is 7.5 or newer |
+| `requirements-cu126.txt` | 5.0 – 9.0                   | your GPU is below 7.5    |
 
 If `nvidia-smi` is not found, reports no GPU, or reports a compute
 capability below 5.0, NameTag 3 will run on the CPU, which is fine for
