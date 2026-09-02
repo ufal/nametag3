@@ -235,12 +235,13 @@ script command-line arguments.
 
 ## Installation
 
-### Installation for NVIDIA
+### Installation for NVIDIA GPUs
 
 1. Clone the repository:
 
 ```sh
 git clone https://github.com/ufal/nametag3
+cd nametag3
 ```
 
 2. Create a Python virtual environment with torch called `venv` in the root of this directory:
@@ -255,17 +256,47 @@ python3 -m venv venv
 venv/bin/pip install -U pip
 ```
 
-4. Install the required packages:
+4. Find out which requirements file to use:
+
+NameTag 3 ships two requirements files that differ only in which prebuilt torch
+package they install. Print the compute capability of your GPU:
+
+```sh
+nvidia-smi --query-gpu=name,compute_cap,driver_version --format=csv
+```
+
+| Reported `compute_cap`   | Use this file             |
+|--------------------------|---------------------------|
+| 7.5 or higher            | `requirements.txt`        |
+| 5.0 to 7.2               | `requirements-cu126.txt`  |
+| below 5.0                | neither (CPU only)        |
+
+`requirements.txt` supports compute capability 7.5 through 12.0 (Turing, Ampere,
+Ada, Hopper, Blackwell), `requirements-cu126.txt` supports 5.0 through 9.0
+(Maxwell, Pascal, Volta, Turing, Ampere, Ada, Hopper). Use `requirements.txt`
+unless your GPU is too old for it.
+
+If `nvidia-smi` is not found, reports no GPU, or reports a compute
+capability below 5.0, NameTag 3 will run on the CPU, which is fine for
+tagging but slow for training.
+
+5. Install the required packages, using the file from previous step:
 
 ```sh
 venv/bin/pip install -r requirements.txt
 ```
 
-5. Download and unzip the NameTag 3 Models:
+or
+
+```sh
+venv/bin/pip install -r requirements-cu126.txt
+```
+
+6. Download and unzip the NameTag 3 Models:
 
 Download the [latest version of NameTag 3 models](https://ufal.mff.cuni.cz/nametag/3/models).
 
-6. The `nametag3.py` script is then called using the Python installed in your virtual environment:
+7. The `nametag3.py` script is then called using the Python installed in your virtual environment:
 
 ```sh
 venv/bin/python3 ./nametag3.py [--argument=value]
