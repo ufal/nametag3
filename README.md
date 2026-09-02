@@ -271,7 +271,7 @@ nvidia-smi --query-gpu=name,compute_cap,driver_version --format=csv
 | `requirements-cu126.txt` | 5.0 – 9.0                   | your GPU is below 7.5    |
 
 If `nvidia-smi` is not found or reports no GPU, NameTag 3 runs on the CPU
-automatically, which is fine for tagging but slow for training (see also [Can NameTag 3 be Trained on a regular CPU?](https://ufal.mff.cuni.cz/nametag/3/faq#cpu_vs_gpu_training).
+automatically, which is fine for tagging but slow for training (see also [Can NameTag 3 be Trained on a regular CPU?](https://ufal.mff.cuni.cz/nametag/3/faq#cpu_vs_gpu_training)).
 
 If a GPU is present but its compute capability is outside the range of the
 installed requirements file, NameTag 3 will fail at the first GPU operation.
