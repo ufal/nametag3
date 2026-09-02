@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Last epoch is saved when no `--dev_data` is given.
+
 ### Added
 
 - `requirements-cu126.txt` for CUDA capabilities below 7.5.

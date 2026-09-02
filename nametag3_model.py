@@ -368,6 +368,26 @@ class CheckpointAndRestoreBestWeightsCallback(keras.callbacks.Callback):
             warnings.warn("Could not delete temporary checkpoint directory '{}': {}".format(checkpoint_dir, e))
 
 
+class SaveLastCheckpointCallback(keras.callbacks.Callback):
+    """Saves the model weights of the last epoch at the end of training."""
+
+    def __init__(self, checkpoint_path):
+        super().__init__()
+        self._checkpoint_path = checkpoint_path
+        self._last_epoch = None
+
+    def on_epoch_end(self, epoch, logs=None):
+        self._last_epoch = epoch
+
+    def on_train_end(self, logs=None):
+        if self._last_epoch is None:
+            warnings.warn("No checkpoint was saved to '{}': training ended without completing a single epoch".format(self._checkpoint_path))
+            return
+
+        self.model.save_weights(self._checkpoint_path, overwrite=True)
+        print("Model checkpoint from last epoch {} saved to '{}'".format(self._last_epoch + 1, self._checkpoint_path), file=sys.stderr, flush=True)
+
+
 class NestedF1Score(keras.metrics.Metric):
     """Custom Keras metric for nested span-based micro F1 score."""
 
@@ -785,6 +805,10 @@ class NameTag3Model(keras.Model):
                                                                      checkpoint_path=checkpoint_path,
                                                                      save_best_checkpoint=save_best_checkpoint,
                                                                      delete_checkpoint_on_end=(self._args.best_weights_device == "disk" and not save_best_checkpoint)))
+        elif save_best_checkpoint:
+            # Without dev data there is no metric to select on, so keep the weights of the last epoch.
+            print("No dev data given, so the checkpoint will contain the weights of the last epoch (with dev data, the best epoch would be selected instead).", file=sys.stderr, flush=True)
+            callbacks.append(SaveLastCheckpointCallback(checkpoint_path=checkpoint_path))
 
         super().fit(train_collection.dataloader,
                     validation_data=dev_collection.dataloader if dev_collection else None,
