@@ -36,22 +36,27 @@ import sys
 SEP = "\t"
 
 
-def flush(ids, forms, tags):
+def flush(ids, forms, tags, out):
+    """Print all running entities to 'out' and return three empty lists."""
+
     for i in range(len(ids)):
-        print(ids[i] + SEP + tags[i] + SEP + forms[i])
+        print(ids[i] + SEP + tags[i] + SEP + forms[i], file=out)
     return [], [], []
 
 
-if __name__ == "__main__":
+def main(instream=None, outstream=None):
+    """Print the entities of the CoNLL lines in 'instream' to 'outstream'."""
 
-    line_number = 0
+    instream = sys.stdin if instream is None else instream
+    outstream = sys.stdout if outstream is None else outstream
+
     ids, forms, tags = [], [], []
-    for line in sys.stdin:
-        line_number += 1
+
+    for line_number, line in enumerate(instream, 1):
         line = line.rstrip("\r\n")
 
         if not line:    # sentence ended, flush entities
-            ids, forms, tags = flush(ids, forms, tags)
+            ids, forms, tags = flush(ids, forms, tags, outstream)
 
         else:
             cols = line.split(SEP)
@@ -62,7 +67,7 @@ if __name__ == "__main__":
             form, ne = cols
 
             if ne == "O":   # all entities ended, flush entities
-                ids, forms, tags = flush(ids, forms, tags)
+                ids, forms, tags = flush(ids, forms, tags, outstream)
 
             else:
                 labels = ne.split("|")
@@ -77,7 +82,7 @@ if __name__ == "__main__":
 
                         # previous running entity ends here, print and insert new entity instead
                         if label.startswith("B-") or label.startswith("U-") or tags[j] != label[2:]:
-                            print(ids[j] + SEP + tags[j] + SEP + forms[j])
+                            print(ids[j] + SEP + tags[j] + SEP + forms[j], file=outstream)
                             ids[j] = str(line_number)
                             forms[j] = form
 
@@ -94,7 +99,11 @@ if __name__ == "__main__":
 
                 # Flush and remove any running entities deeper than current label count
                 for j in range(len(labels), len(ids)):
-                    print(ids[j] + SEP + tags[j] + SEP + forms[j])
+                    print(ids[j] + SEP + tags[j] + SEP + forms[j], file=outstream)
                 ids = ids[:len(labels)]
                 forms = forms[:len(labels)]
                 tags = tags[:len(labels)]
+
+
+if __name__ == "__main__":
+    main()
