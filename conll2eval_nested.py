@@ -104,6 +104,8 @@ def main(instream=None, outstream=None):
                 forms = forms[:len(labels)]
                 tags = tags[:len(labels)]
 
+    flush(ids, forms, tags, outstream)   # flush entities still open at end
+
 
 if __name__ == "__main__":
     main()
