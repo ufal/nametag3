@@ -549,42 +549,64 @@ class NameTag3Dataset:
         else:
             raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given nested corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. Other supported nested NE corpora are 'english-ACE2004', 'english-ACE2005', and 'english-GENIA'. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3Dataset.EVAL_SCRIPTS.")
 
-    def evaluate(self, dataset_type, predictions_filename, logdir):
-        """Evaluate NEs in predictions_filename against the dataset's gold NEs.
+    def evaluate(self, dataset_type, predictions_filename, logdir, timeout=300):
+        """Evaluate NEs in predictions_filename against the dataset's gold NEs
+           using the dataset's official evaluation script."""
 
-        Evaluate NEs in predictions_filename against the dataset's gold NEs
-        using the dataset's official evaluation script.
-        """
-
-        # Run the eval script
         eval_script = self._eval_script()
         eval_script_abs = os.path.abspath(eval_script)
         print("\"{}\" data of corpus \"{}\" will be evaluated with an external script \"{}\"".format(dataset_type, self._corpus, eval_script_abs), file=sys.stderr, flush=True)
-        subprocess.run([eval_script_abs, dataset_type, self._filename, predictions_filename], cwd=logdir, check=True)
 
-        # Parse the eval script output
-        f1 = None
-        if eval_script == "run_cnec2.0_eval_nested_corrected.sh":
-            with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
-                for line in result_file:
-                    line = line.strip("\n")
-                    if line.startswith("Type:"):
-                        cols = line.split()
-                        f1 = float(cols[5])
-        elif eval_script == "run_conlleval.sh":
-            with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
-                for line in result_file:
-                    line = line.strip("\n")
-                    if line.startswith("accuracy:"):
-                        f1 = float(line.split()[-1])
-        elif eval_script == "run_eval_nested.sh":
-            with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
-                for line in result_file:
-                    line = line.strip("\n")
-                    if line.startswith("F1"):
-                        f1 = float(line.split(" ")[-1])
-        else:
-            raise NotImplementedError("Parsing of the eval script \"{}\" output not implemented".format(eval_script))
+        # Run the external script, but don't let it kill training.
+        try:
+            subprocess.run([eval_script_abs, dataset_type, self._filename, predictions_filename],
+                            cwd=logdir,
+                            check=True,
+                            timeout=timeout,
+                            capture_output=True,
+                            text=True)
+        except subprocess.CalledProcessError as e:
+            print("Eval script \"{}\" exited with code {}.\nstdout:\n{}\nstderr:\n{}".format(eval_script_abs, e.returncode, e.stdout, e.stderr), file=sys.stderr, flush=True)
+            return 0.0
+        except subprocess.TimeoutExpired as e:
+            print("Eval script \"{}\" timed out after {}s.".format(eval_script_abs, timeout), file=sys.stderr, flush=True)
+            return 0.0
+        except OSError as e:
+            # covers FileNotFoundError, PermissionError, etc. (e.g. script missing or not executable)
+            print("Failed to launch eval script \"{}\": {}".format(eval_script_abs, e), file=sys.stderr, flush=True)
+            return 0.0
+
+        # Parse the eval script output.
+        try:
+            f1 = None
+            if eval_script == "run_cnec2.0_eval_nested_corrected.sh":
+                with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
+                    for line in result_file:
+                        line = line.strip("\n")
+                        if line.startswith("Type:"):
+                            cols = line.split()
+                            f1 = float(cols[5])
+            elif eval_script == "run_conlleval.sh":
+                with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
+                    for line in result_file:
+                        line = line.strip("\n")
+                        if line.startswith("accuracy:"):
+                            f1 = float(line.split()[-1])
+            elif eval_script == "run_eval_nested.sh":
+                with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
+                    for line in result_file:
+                        line = line.strip("\n")
+                        if line.startswith("F1"):
+                            f1 = float(line.split(" ")[-1])
+            else:
+                raise NotImplementedError("Parsing of the eval script \"{}\" output not implemented".format(eval_script))
+        except (FileNotFoundError, IndexError, ValueError) as e:
+            print("Failed to parse output of eval script \"{}\": {}".format(eval_script_abs, e), file=sys.stderr, flush=True)
+            return 0.0
+
+        if f1 is None:
+            print("Eval script \"{}\" ran but no F1 score was found in its output.".format(eval_script_abs), file=sys.stderr, flush=True)
+            return 0.0
 
         return f1
 
