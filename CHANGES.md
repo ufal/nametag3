@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Don't let failed evaluation subprocess kill the training.
+
+### Changed
+
 - Last epoch is saved when no `--dev_data` is given.
 
 ### Added
