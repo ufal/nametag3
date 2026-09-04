@@ -72,9 +72,13 @@ def main(instream=None, outstream=None):
             else:
                 labels = ne.split("|")
 
-                # Validate that 'O' is not mixed with other labels
+                # 'O' among other labels means no entity from that depth
+                # downward for this token (this is unsanitized decoder output).
+                # Truncate the depth stack at the first 'O'; the
+                # flush-deeper-entities logic below already handles the
+                # resulting shorter label list.
                 if "O" in labels:
-                    raise ValueError("conll2eval_nested.py: 'O' mixed with other labels in line {}".format(line_number))
+                    labels = labels[:labels.index("O")]
 
                 for j, label in enumerate(labels):
 
