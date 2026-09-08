@@ -73,6 +73,7 @@ Novák	I-P|B-ps
 """
 
 import argparse
+import contextlib
 import collections
 import email.parser
 import http.server
@@ -83,6 +84,7 @@ import os
 import pickle
 import socketserver
 import sys
+import threading
 import time
 import unicodedata
 import urllib.parse
@@ -190,8 +192,9 @@ class Models:
         def yield_predicted_batches(self, dataset):
             time_start = time.time()
 
-            for batch_output in self.model.yield_predicted_batches("test", dataset, self.args):
-                yield batch_output
+            with self._server_args.optional_semaphore:
+                for batch_output in self.model.yield_predicted_batches("test", dataset, self.args):
+                    yield batch_output
 
             time_end = time.time()
             print("Request {:.2f}ms,".format(1000 * (time_end - time_start)), file=sys.stderr, flush=True)
@@ -726,7 +729,6 @@ class NameTag3Server(socketserver.ThreadingTCPServer):
 
 if __name__ == "__main__":
     import signal
-    import threading
 
     # Parse server arguments
     parser = argparse.ArgumentParser()
@@ -735,6 +737,7 @@ if __name__ == "__main__":
     parser.add_argument("models", type=str, nargs="+", help="Models to serve")
     parser.add_argument("--batch_size", default=32, type=int, help="Batch size")
     parser.add_argument("--logfile", default=None, type=str, help="Log path")
+    parser.add_argument("--max_concurrent_batches", default=None, type=int, help="Maximum concurrent batch computations by the neural network.")
     parser.add_argument("--max_labels_per_token", default=5, type=int, help="Maximum labels per token.")
     parser.add_argument("--max_request_size", default=4096*1024, type=int, help="Maximum request size")
     parser.add_argument("--threads", default=4, type=int, help="Threads to use")
@@ -751,6 +754,12 @@ if __name__ == "__main__":
 
     # Load the models
     models = Models(args)
+
+    # Create a semaphore if needed
+    if args.max_concurrent_batches:
+        args.optional_semaphore = threading.Semaphore(args.max_concurrent_batches)
+    else:
+        args.optional_semaphore = contextlib.nullcontext()
 
     # Create the server
     server = NameTag3Server(args, models)

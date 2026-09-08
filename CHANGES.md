@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `--max_concurrent_batches` to throttle concurrent batch computation.
+
 ### Changed
 
 - Don't let failed evaluation subprocess kill the training.
