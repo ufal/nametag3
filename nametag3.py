@@ -140,6 +140,7 @@ if __name__ == "__main__":
     parser.add_argument("--subword_masking", default=0.0, type=float, help="Mask subwords with the given probability.")
     parser.add_argument("--steps_per_epoch", default=None, type=int, help="Steps per epoch. Default None (epoch iterates over all data).")
     parser.add_argument("--tagsets", default=None, type=str, help="Specifies the tagsets corresponding to the given corpora for multitagset training, separated by commas. During training, each tagset is applied to its respective corpus. When used in prediction mode, the output will only include valid tags from the specified tagset(s).")
+    parser.add_argument("--tagsets_config", default=None, type=str, help="JSON file defining the valid tags for each tagset used with '--tagsets' during multitagset training. See NameTag3Dataset.TAGSETS for the expected format and its default content. Only valid for training a new model (i.e., without --load_checkpoint); if omitted, NameTag3Dataset.TAGSETS is used.")
     parser.add_argument("--tagsets_description", default=None, type=str, help="Free-text description of the tagsets used for training, e.g., which tagset was applied to which language or corpus. Providing this argument during training allows --default_tagset to be set to None instead of a specific tagset. The description is saved with the model and printed during inference to inform the user about the tagset selection used.")
     parser.add_argument("--temperature", default=2.0, type=float, help="Value of temperature for temperature sampling.")
     parser.add_argument("--test_data", default=None, type=str, help="Test data.")
@@ -182,9 +183,9 @@ if __name__ == "__main__":
                 "load_checkpoint", "logdir", "lora", "lora_rank",
                 "max_labels_per_token", "max_sentences_train",
                 "max_tokenizer_length", "sampling", "save_best_checkpoint",
-                "seed", "subword_masking", "tagsets", "tagsets_description",
-                "temperature", "test_data", "threads", "time", "train_data",
-                "warmup_epochs", "warmup_epochs_frozen"]:
+                "seed", "subword_masking", "tagsets", "tagsets_config",
+                "tagsets_description", "temperature", "test_data", "threads",
+                "time", "train_data", "warmup_epochs", "warmup_epochs_frozen"]:
         del logargs[key]
 
     # Include unique Slurm job id if running in Slurm-managed environment.
@@ -202,6 +203,9 @@ if __name__ == "__main__":
 
     # Load the HF tokenizer
     tokenizer = NameTag3Dataset.get_hf_tokenizer(args.hf_plm, load_dirname=args.load_checkpoint)
+
+    # Get tagsets configuration
+    args.tagsets_config = NameTag3Dataset.get_tagsets_config(args, load_dirname=args.load_checkpoint)
 
     # We load the training data only to get the mappings, nothing else is used.
     train_loaded=None

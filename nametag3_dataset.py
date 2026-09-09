@@ -12,6 +12,7 @@
 
 
 import io
+import json
 import os
 import pickle
 import subprocess
@@ -100,6 +101,7 @@ class NameTag3Dataset:
     TAGS = 1
 
     HF_TOKENIZER_SENTINEL = "tokenizer_config.json"
+    TAGSETS_CONFIGURATION_FILENAME = "tagsets_config.json"
 
     def __init__(self, args, tokenizer=None, filename=None, text=None, train_dataset=None, previous_dataset=None, corpus=None, tagset=None):
         """Load the dataset from a two column CoNLL-like format.
@@ -131,8 +133,14 @@ class NameTag3Dataset:
         self._tokenizer = tokenizer
         self._tokenizer_model_max_length = self._resolve_max_length(tokenizer,
                                                                     max_tokenizer_length=getattr(args, "max_tokenizer_length", None))
-        self.tagset = tagset
         self._training = train_dataset == None
+
+        # Tagsets config
+        self.tagset = tagset
+        if self.tagset:
+            self._tagsets_config = getattr(self._args, "tagsets_config", None) or TAGSETS
+            if self.tagset not in self._tagsets_config:
+                raise ValueError("Unknown tagset value \"{}\" of NameTag3Dataset. Known tagset values are \"{}\"".format(self.tagset, ",".join(self._tagsets_config.keys())))
 
         # Data structures
         self._forms = []
@@ -202,9 +210,7 @@ class NameTag3Dataset:
                         label = columns[self.TAGS]
 
                         if self.tagset and not self._seq2seq:
-                            if self.tagset not in TAGSETS:
-                                raise ValueError("Unknown tagset value \"{}\" of NameTag3Dataset. Known tagset values are \"{}\"".format(self.tagset, ",".join(TAGSETS.keys())))
-                            if self._training and label not in TAGSETS[self.tagset]:
+                            if self._training and label not in self._tagsets_config[self.tagset]:
                                 raise ValueError("Gold output \"{}\" not valid for tagset \"{}\"".format(label, self.tagset))
 
                         if self.tagset and not self._seq2seq and label != "O":
@@ -330,6 +336,10 @@ class NameTag3Dataset:
     @property
     def filename(self):
         return self._filename
+
+    @property
+    def tagsets_config(self):
+        return getattr(self, "_tagsets_config", None)
 
     def save_mappings(self, path):
         """Pickle word mappings."""
@@ -619,13 +629,13 @@ class NameTag3Dataset:
 
         # Multitagset training.
         else:
-            if self.tagset not in TAGSETS:
-                raise ValueError("Unknown tagset value \"{}\" of NameTag3Dataset. Known tagset values are \"{}\"".format(self.tagset, ",".join(TAGSETS.keys())))
+            if self.tagset not in self._tagsets_config:
+                raise ValueError("Unknown tagset value \"{}\" of NameTag3Dataset. Known tagset values are \"{}\"".format(self.tagset, ",".join(self._tagsets_config.keys())))
 
             self._tagset_mask = [-1e9] * len(all_tags)
 
             # Mark positions with valid tags in this dataset.
-            for tag in TAGSETS[self.tagset]:
+            for tag in self._tagsets_config[self.tagset]:
                 tag_with_tagset = "{}-{}".format(tag, self.tagset) if tag != "O" else tag
                 if tag_with_tagset in all_tags:
                     index = all_tags.index(tag_with_tagset)
@@ -726,3 +736,33 @@ class NameTag3Dataset:
 
     def save_hf_tokenizer(self, save_dirname):
         self._tokenizer.save_pretrained(save_dirname)
+
+    @staticmethod
+    def get_tagsets_config(args, load_dirname=None):
+        """Resolve the tagsets config to use."""
+
+        if load_dirname is not None:
+            if getattr(args, "tagsets_config", None):
+                raise ValueError("--tagsets_config must not be used together with --load_checkpoint as a checkpoint's tagsets config is fixed at training time. Remove --tagsets_config as the checkpoint's original tagsets config is used automatically.")
+
+            saved_path = os.path.join(load_dirname, "model", NameTag3Dataset.TAGSETS_CONFIGURATION_FILENAME)
+            if os.path.isfile(saved_path):
+                with open(saved_path, mode="r", encoding="utf-8") as f:
+                    return json.load(f)
+            return TAGSETS
+
+        if getattr(args, "tagsets_config", None):
+            try:
+                with open(args.tagsets_config, mode="r", encoding="utf-8") as f:
+                    config = json.load(f)
+            except (OSError, json.JSONDecodeError) as e:
+                raise ValueError("Could not load --tagsets_config \"{}\": {}".format(args.tagsets_config, e))
+            NameTag3Dataset._validate_tagsets_config(config)
+            return config
+
+        return TAGSETS
+
+    @staticmethod
+    def _validate_tagsets_config(config):
+        if not isinstance(config, dict) or not all(isinstance(v, list) for v in config.values()):
+            raise ValueError("--tagsets_config must be a JSON object mapping tagset names to lists of tag strings.")

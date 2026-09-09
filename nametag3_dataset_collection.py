@@ -12,6 +12,7 @@
 
 
 import io
+import json
 import math
 import pickle
 import os
@@ -273,3 +274,7 @@ class NameTag3DatasetCollection:
         self._datasets[-1].save_mappings(mappings_filename)
 
         self._datasets[-1].save_hf_tokenizer(save_dirname)
+
+        if self.tagsets:
+            with open(os.path.join(save_dirname, NameTag3Dataset.TAGSETS_CONFIGURATION_FILENAME), "w", encoding="utf-8") as fw:
+                json.dump(self.datasets[-1].tagsets_config, fw)

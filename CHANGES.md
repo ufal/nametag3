@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `--max_concurrent_batches` to throttle concurrent batch computation.
+- `--max_concurrent_batches` to throttle concurrent batch computation.
+- Tagsets for multitagset training can be defined in config file.
 
 ### Changed
 
