@@ -1,0 +1,12 @@
+{
+  "conll": ["B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "B-MISC", "I-MISC", "O"],
+  "uner": ["B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "O"],
+  "onto": ["O", "B-PERSON", "I-PERSON", "B-NORP", "I-NORP", "B-FAC", "I-FAC",
+           "B-ORG", "I-ORG", "B-GPE", "I-GPE", "B-LOC", "I-LOC", "B-PRODUCT",
+           "I-PRODUCT", "B-DATE", "I-DATE", "B-TIME", "I-TIME", "B-PERCENT",
+           "I-PERCENT", "B-MONEY", "I-MONEY", "B-QUANTITY", "I-QUANTITY",
+           "B-ORDINAL", "I-ORDINAL", "B-CARDINAL", "I-CARDINAL", "B-EVENT",
+           "I-EVENT", "B-WORK_OF_ART", "I-WORK_OF_ART", "B-LAW", "I-LAW",
+           "B-LANGUAGE", "I-LANGUAGE"],
+   "chnec": ["B-p", "I-p", "B-i", "I-i", "B-g", "I-g", "B-o", "I-o", "B-a", "I-a", "B-t", "I-t", "O"]
+}

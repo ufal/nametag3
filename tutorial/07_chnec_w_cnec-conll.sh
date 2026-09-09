@@ -57,5 +57,6 @@ $PYTHON nametag3.py \
   --name="czech" \
   --sampling="temperature" \
   --tagsets="conll,chnec" \
+  --tagsets_config="tagsets_config.json" \
   --test_data="$DATA/czech-cnec2.0-conll/test.conll,$DATA/czech-chnec/test.conll" \
   --train_data="$DATA/czech-cnec2.0-conll/train.conll,$DATA/czech-chnec/train.conll" \
