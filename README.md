@@ -412,3 +412,5 @@ Novák	I-P|B-ps
 ## Acknowledgements
 
 This work was supported by the Johannes Amos Comenius Programme (P JAC) project No. CZ.02.01.01/00/22_008/0004605, Natural and anthropogenic georisks, and it has also been supported by the Ministry of Education, Youth and Sports of the Czech Republic, Project No. LM2023062 LINDAT/CLARIAH-CZ. The work described herein uses resources hosted by the [LINDAT/CLARIAH-CZ Research Infrastructure](https://lindat.cz) (projects LM2018101 and LM2023062, supported by the Ministry of Education, Youth and Sports of the Czech Republic).
+
+In the past, this work was supported by the Grant Agency of the Czech Republic under the EXPRO program as project “LUSyD” (project No. GX20-16819X).
