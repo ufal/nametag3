@@ -287,7 +287,8 @@ if __name__ == "__main__":
 
             # Evaluate.
             if args.evaluate_test_data:
-                test_score = test_dataset.evaluate("test", predictions_filename, args.logdir)
+                eval_filename = "{}_{}.eval".format("test", test_dataset.corpus)
+                test_score = test_dataset.evaluate("test", predictions_filename, args.logdir, eval_filename=eval_filename)
                 print("Test F1 ({}): {:.4f}".format(test_dataset.corpus, test_score), file=sys.stderr)
                 test_scores.append(test_score)
 

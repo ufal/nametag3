@@ -11,13 +11,14 @@
 # NE corpora (e.g., CoNLL-2003 and CoNLL-2002), using the official evaluation
 # script conlleval.
 
-# Usage: ./run_conlleval.sh [dev|test] gold_conll_file system_conll_file
+# Usage: ./run_conlleval.sh [dev|test] gold_conll_file system_conll_file [output_eval_file]
 
 set -e
 
 name="$1"
 gold="$2"
 system="$3"
+output="${4:-${name}.eval}"
 
 # Debug print
 #echo "Running external CoNLL evaluation on \"$name\" dataset with gold file \"$gold\" and system file \"$system\""
@@ -26,4 +27,4 @@ system="$3"
 paste $(dirname $0)/${gold} ${system} | cut -f1,2,4 > ${name}_conlleval_input.conll
 
 # Run conlleval
-$(dirname $0)/conlleval -d "\t" < ${name}_conlleval_input.conll > $name.eval
+$(dirname $0)/conlleval -d "\t" < ${name}_conlleval_input.conll > "${output}"

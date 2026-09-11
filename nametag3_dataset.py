@@ -559,9 +559,13 @@ class NameTag3Dataset:
         else:
             raise NotImplementedError("NameTag 3 does not have the official evaluation script for the given nested corpus. If you are training on CNEC 2.0, you can specify --corpus=czech-cnec2.0. Other supported nested NE corpora are 'english-ACE2004', 'english-ACE2005', and 'english-GENIA'. If you are training on a custom nested NE corpus and you have the official evaluation script for it, you can register the script in NameTag3Dataset.EVAL_SCRIPTS.")
 
-    def evaluate(self, dataset_type, predictions_filename, logdir, timeout=300):
+    def evaluate(self, dataset_type, predictions_filename, logdir, eval_filename=None, timeout=300):
         """Evaluate NEs in predictions_filename against the dataset's gold NEs
            using the dataset's official evaluation script."""
+
+        if eval_filename is None:
+            eval_filename = "{}.eval".format(dataset_type)
+        eval_path = os.path.join(logdir, eval_filename)
 
         eval_script = self._eval_script()
         eval_script_abs = os.path.abspath(eval_script)
@@ -569,7 +573,7 @@ class NameTag3Dataset:
 
         # Run the external script, but don't let it kill training.
         try:
-            subprocess.run([eval_script_abs, dataset_type, self._filename, predictions_filename],
+            subprocess.run([eval_script_abs, dataset_type, self._filename, predictions_filename, eval_filename],
                             cwd=logdir,
                             check=True,
                             timeout=timeout,
@@ -590,20 +594,20 @@ class NameTag3Dataset:
         try:
             f1 = None
             if eval_script == "run_cnec2.0_eval_nested_corrected.sh":
-                with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
+                with open(eval_path, "r", encoding="utf-8") as result_file:
                     for line in result_file:
                         line = line.strip("\n")
                         if line.startswith("Type:"):
                             cols = line.split()
                             f1 = float(cols[5])
             elif eval_script == "run_conlleval.sh":
-                with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
+                with open(eval_path, "r", encoding="utf-8") as result_file:
                     for line in result_file:
                         line = line.strip("\n")
                         if line.startswith("accuracy:"):
                             f1 = float(line.split()[-1])
             elif eval_script == "run_eval_nested.sh":
-                with open(os.path.join(logdir, "{}.eval".format(dataset_type)), "r", encoding="utf-8") as result_file:
+                with open(eval_path, "r", encoding="utf-8") as result_file:
                     for line in result_file:
                         line = line.strip("\n")
                         if line.startswith("F1"):

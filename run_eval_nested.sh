@@ -10,13 +10,14 @@
 # This script evaluates the NameTag 3 nested NER during the training phase,
 # using the evaluation script compare_nested_entities.py.
 
-# Usage: ./run_conlleval.sh [dev|test] gold_conll_file system_conll_file
+# Usage: ./run_conlleval.sh [dev|test] gold_conll_file system_conll_file [output_eval_file]
 
 set -e
 
 name="$1"
 gold="$2"
 system="$3"
+output="${4:-${name}.eval}"
 
 # Debug print
 #echo "Running external nested evaluation on \"$name\" dataset with gold file \"$gold\" and system file \"$system\""
@@ -29,4 +30,4 @@ cat ${system} | $(dirname $0)/conll2eval_nested.py > ${name}_system_entities.txt
 touch ${name}_gold_entities.txt
 cat $(dirname $0)/${gold} | $(dirname $0)/conll2eval_nested.py > ${name}_gold_entities.txt
 
-$(dirname $0)/compare_nested_entities.py ${name}_gold_entities.txt ${name}_system_entities.txt > ${name}.eval
+$(dirname $0)/compare_nested_entities.py ${name}_gold_entities.txt ${name}_system_entities.txt > "${output}"

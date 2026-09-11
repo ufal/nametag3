@@ -640,7 +640,8 @@ class MacroAverageDevF1(keras.callbacks.Callback):
                 print(predicted_output, file=predictions_file, end="")
 
             # Evaluate
-            dev_score = self._dev_datasets[i].evaluate("dev", predictions_filename, self._args.logdir)
+            eval_filename = "{}_{}.eval".format("dev", self._dev_datasets[i].corpus)
+            dev_score = self._dev_datasets[i].evaluate("dev", predictions_filename, self._args.logdir, eval_filename=eval_filename)
             dev_scores.append(dev_score)
             print("F1 on dev {} ({}): {:.4f}".format(i, self._dev_datasets[i].corpus, dev_score), file=sys.stderr, flush=True)
 
